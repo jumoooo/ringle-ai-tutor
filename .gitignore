@@ -1,0 +1,61 @@
+# Ruby / Rails
+/.bundle
+/log/*
+/tmp/*
+/vendor/bundle
+/storage/*
+/public/assets
+/public/packs
+/coverage
+
+# Database
+/db/*.sqlite3
+/db/*.sqlite3-*
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Codex / Claude runtime state
+.codex/state/
+
+# AI operations assets
+.agents/
+.ai/
+.claude/
+.codex/
+.harness/
+
+# Rails credentials keys (CRITICAL — 절대 커밋 금지)
+config/master.key
+config/credentials/*.key
+
+# Vite cache
+.vite/
+*.local
+
+# Logs (패턴 보완)
+*.log
+.byebug_history
+
+# AI 생성 오디오 파일
+*.mp3
+*.wav
+*.ogg
+
+# Claude / Agent 운용 문서
+CLAUDE.md
+AGENTS.md
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
