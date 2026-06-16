@@ -3,6 +3,9 @@
 /log/*
 /tmp/*
 /vendor/bundle
+backend/tmp/
+backend/vendor/
+backend/.bundle-user/
 /storage/*
 /public/assets
 /public/packs
@@ -35,6 +38,7 @@ frontend/dist/
 
 # Rails credentials keys (CRITICAL — 절대 커밋 금지)
 config/master.key
+backend/config/master.key
 config/credentials/*.key
 
 # Vite cache
