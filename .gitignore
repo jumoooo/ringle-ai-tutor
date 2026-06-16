@@ -26,15 +26,16 @@ frontend/dist/
 .env.*
 !.env.example
 
-# Codex / Claude runtime state
-.codex/state/
-
-# AI operations assets
+# ⛔ AI 에이전틱 운용 자산 — 절대 커밋 금지
+# 이 경로들은 어떤 경우에도 저장소에 올라가서는 안 됩니다.
+# 이미 추적 중인 파일이 있으면 반드시 git rm --cached 로 제거하세요.
 .agents/
 .ai/
 .claude/
 .codex/
 .harness/
+CLAUDE.md
+AGENTS.md
 
 # Rails credentials keys (CRITICAL — 절대 커밋 금지)
 config/master.key
@@ -54,9 +55,6 @@ config/credentials/*.key
 *.wav
 *.ogg
 
-# Claude / Agent 운용 문서
-CLAUDE.md
-AGENTS.md
 
 # OS / Editor
 .DS_Store
