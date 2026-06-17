@@ -245,3 +245,135 @@ Codex Work 단계에서 실제 참조할 스킬을 선별해 설치하는 작업
 - 수용 기준 20/20 충족
 - Final Check PASS (2026-06-17)
 - 커밋 없음 (.codex/, .ai/ gitignored)
+
+---
+
+## Phase 2 — Backend 멤버십 도메인 (2026-06-17)
+
+**태스크 ID:** `2026-06-17_phase2-membership-domain`  
+**handoff 파일:** `.ai/handoffs/2026-06-17_phase2-membership-domain/work-order.md`
+
+### 작업 배경 및 목표
+
+Phase 1 스캐폴딩 완료 후 첫 번째 비즈니스 로직 구현 단계다.
+AI 파이프라인과 프론트엔드 화면 모두 멤버십 권한 체크에 의존하므로,
+DB 마이그레이션 → 모델 → 서비스 객체 → 컨트롤러 → Seed → RSpec 순서로
+멤버십 도메인 전체를 Rails 백엔드에 구현하는 것이 목표다.
+OpenAI 키 없이 순수 Rails + PostgreSQL만으로 완성 가능한 범위다.
+
+### 주요 프롬프트 예시
+
+> "그럼 준비는 완료 되었고 이제 Phase 2 깊게 읽어보고 깊게 생각해본다음 상세하게 계획 수립하고 /cm_run 해줘 누락, 오해 없이"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 만료 판단 기준 | expires_at 단일 기준 | 복잡도 제거 — 횟수+기간 이중 기준은 엣지케이스가 많고 과제 요구사항에 명시되지 않음 |
+| 어드민 보호 방식 | X-Admin-Key 헤더 | 프론트 연동 편의 — React Axios 인터셉터로 쉽게 처리 가능. 과제에서 인증 제외 범위 |
+| 멤버십 없음 응답 | 200 + data:null | 프론트 처리 편의 — 404는 에러 핸들러로 튀지만, 없음은 정상 상태이므로 200으로 통일 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-17_phase2-membership-domain](docs/2026-06-17_phase2-membership-domain/2026-06-17_phase2-membership-domain_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-17_phase2-membership-domain](docs/2026-06-17_phase2-membership-domain/2026-06-17_phase2-membership-domain_done.png)
+
+### 최종 결과 요약
+
+- 6개 마이그레이션 전부 up (users/plans/memberships/payment_logs/conversations/messages)
+- RSpec 28 examples, 0 failures (Membership model spec + 5개 request spec)
+- 9개 엔드포인트 정상 라우팅 확인 (일반 6개 + admin 3개)
+- 서비스 5개 생성 (MockPaymentService, Purchase/Upgrade/AdminGrant/AdminRevokeService)
+- rework_count: 1 (422 Rack deprecation — 심볼 → 숫자 코드로 수정)
+
+---
+
+## Phase 3 — Backend AI Pipeline (2026-06-17)
+
+**태스크 ID:** `2026-06-17_phase3-ai-pipeline`  
+**handoff 파일:** `.ai/handoffs/2026-06-17_phase3-ai-pipeline/work-order.md`
+
+### 작업 배경 및 목표
+
+멤버십 도메인(Phase 2) 위에 실제 AI 기능을 올리는 단계다.
+STT(Whisper-1), Chat SSE 스트리밍(gpt-4o), TTS(tts-1/nova), 대화 생성/조회 5개 엔드포인트를 구현한다.
+Rate Limit(Rack::Attack), 재시도 정책(retryable), 멤버십 can_talk 체크까지 포함한다.
+프론트엔드와 연동 전 백엔드 AI 파이프라인 전체를 완성하는 것이 목표다.
+
+### 주요 프롬프트 예시
+
+> "응 깊게 문서 읽어보고 누락, 외곡 없이 아주 상세하게 계획 세워주고 그다음 /cm_run 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| OpenAI API 테스트 격리 | WebMock 스텁 | OPENAI_API_KEY 없이 CI/로컬 모두 통과. VCR 카세트보다 단순 |
+| SSE 구현 방식 | ActionController::Live | Rails 7.1 내장, 외부 의존 없음. Redis/ActionCable 불필요 |
+| require_talk_access! 위치 | ApplicationController 헬퍼 | STT/Chat/TTS 3곳 공통 재사용. 컨트롤러마다 중복 금지 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-17_phase3-ai-pipeline](docs/2026-06-17_phase3-ai-pipeline/2026-06-17_phase3-ai-pipeline_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-17_phase3-ai-pipeline](docs/2026-06-17_phase3-ai-pipeline/2026-06-17_phase3-ai-pipeline_done.png)
+
+### 최종 결과 요약
+
+---
+
+## Phase 4 — Frontend React/TypeScript 전체 구현 (2026-06-18)
+
+**태스크 ID:** `phase4-frontend`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_phase4-frontend/work-order.md`
+
+### 작업 배경 및 목표
+
+Phase 1~3에서 Rails 백엔드 전체(멤버십, AI 파이프라인)가 완성됐고, 이제 과제 평가 핵심인 프론트엔드를 구현하는 단계다.  
+React 18 + TypeScript + Vite로 홈(`/`), 대화(`/chat`), 어드민(`/admin`), 학습stub(`/learn`) 4개 화면을 완성한다.  
+VAD + Waveform + SSE 스트리밍 + TTS 큐 전체 파이프라인을 브라우저에서 연결하는 것이 핵심 목표다.  
+"유저 관점의 제품 완성도 최우선"이라는 과제 기준을 충족해야 한다.
+
+### 주요 프롬프트 예시
+
+> "응 4 해당 내용 깊게 읽어보고 깊게 생각후 계획 수립후 /cm_run 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| POST SSE 수신 방식 | fetch + ReadableStream 수동 파싱 | EventSource는 GET 전용 — conversation_id·message를 body로 보내는 POST 요청에 사용 불가 |
+| VAD 오디오 포맷 | Float32Array → WAV 직접 인코딩 | 헤더 44바이트 추가만으로 순수 JS로 변환 가능. webm 인코딩은 별도 라이브러리 필요 |
+| 대화 복원 전략 | localStorage + GET /conversations/:id | 새로고침 내성 — 메모리 상태는 새로고침 시 소멸하므로 서버 데이터 재조회로 대화를 복원한다 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_phase4-frontend](docs/2026-06-18_phase4-frontend/2026-06-18_phase4-frontend_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_phase4-frontend](docs/2026-06-18_phase4-frontend/2026-06-18_phase4-frontend_done.png)
+
+### 최종 결과 요약
+
+- VAD 초기화, 마이크 권한, 음성 감지 정상 동작
+- STT (Whisper-1) → WAV 업로드 → 텍스트 인식 완료
+- Chat SSE 스트리밍 → AI 응답 버블 실시간 표시
+- TTS (nova 음성) → 음성 자동 재생 완료
+- 홈/어드민/대화 3개 화면 전체 수동 테스트 PASS
+- 주요 버그 해결: vad-web CJS/Vite 충돌, StrictMode 이중 초기화, mjs 미들웨어 우회 서빙
+
+---
+
+- AI 라우트 5개 정상 등록 (POST stt/chat/tts, POST/GET conversations)
+- RSpec 40 examples, 0 failures (WebMock 스텁으로 OpenAI API 격리 완료)
+- Rack::Attack rate limit 3개 (STT 10/min, Chat 10/min, TTS 20/min) — `request.get_header("HTTP_X_USER_ID")` 기준
+- 서비스 3개 생성 (TranscriptionService, ChatStreamService, TtsService) — retryable 3회 backoff 포함
+- TTS 실제 연동 확인: 21KB MP3 다운로드 성공 (nova 음성, tts-1 모델)
+- Chat SSE 동작 확인: OpenAI Tier 0 무료 한도(gpt-4o 429) 문제 — 코드 정상, API 크레딧 충전 필요
+- rework_count: 0 (Codex 피드백 반영 4개: access_token:, tempfile, Rack::Attack discriminator, test isolation)

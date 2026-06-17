@@ -1,28 +1,34 @@
-import { API_ENDPOINTS } from "@/config/api"
-import "./styles/index.css"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { ToastProvider, ToastViewport } from "@/components/Toast"
+import AdminPage from "@/pages/AdminPage"
+import ChatPage from "@/pages/ChatPage"
+import HomePage from "@/pages/HomePage"
+import LearnPage from "@/pages/LearnPage"
 
-function App() {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30_000
+    }
+  }
+})
+
+export default function App() {
   return (
-    <main className="app-shell">
-      <section className="app-card">
-        <p className="eyebrow">Phase 1 Scaffold</p>
-        <h1>Ringle AI Tutor</h1>
-        <p className="description">
-          Rails API와 React 프론트엔드의 기본 연결 구성을 준비했어요.
-        </p>
-        <dl className="status-list">
-          <div>
-            <dt>Backend</dt>
-            <dd>{API_ENDPOINTS.health}</dd>
-          </div>
-          <div>
-            <dt>Frontend</dt>
-            <dd>http://localhost:5173</dd>
-          </div>
-        </dl>
-      </section>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/learn" element={<LearnPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
+          <ToastViewport />
+        </BrowserRouter>
+      </ToastProvider>
+    </QueryClientProvider>
   )
 }
-
-export default App

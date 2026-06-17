@@ -1,5 +1,16 @@
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"
+export const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"
 
 export const API_ENDPOINTS = {
-  health: `${BASE_URL}/api/v1/health`
+  health: `${BASE_URL}/api/v1/health`,
+  users: `${BASE_URL}/api/v1/users`,
+  plans: `${BASE_URL}/api/v1/plans`,
+  membershipCurrent: `${BASE_URL}/api/v1/memberships/current`,
+  membershipPurchase: `${BASE_URL}/api/v1/memberships/purchase`,
+  membershipUpgrade: `${BASE_URL}/api/v1/memberships/upgrade`,
+  stt: `${BASE_URL}/api/v1/stt`,
+  chat: `${BASE_URL}/api/v1/chat`,
+  tts: `${BASE_URL}/api/v1/tts`,
+  conversations: `${BASE_URL}/api/v1/conversations`,
+  adminUsers: `${BASE_URL}/api/v1/admin/users`
 } as const
