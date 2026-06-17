@@ -1,6 +1,7 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
+ENV["OPENAI_API_KEY"] ||= "test-api-key-for-specs"
 require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
@@ -68,7 +69,11 @@ RSpec.configure do |config|
     vcr.default_cassette_options = { record: :new_episodes }
   end
 
-  config.before(:each) do
+  config.before(:suite) do
+    Rack::Attack.enabled = false if defined?(Rack::Attack)
+  end
+
+  config.before(:each, type: :request) do
     WebMock.disable_net_connect!(allow_localhost: true)
   end
 

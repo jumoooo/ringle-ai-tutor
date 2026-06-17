@@ -23,6 +23,13 @@ class ApplicationController < ActionController::API
     forbidden("Admin access required")
   end
 
+  def require_talk_access!
+    membership = @current_user&.memberships&.current&.first
+    return if membership&.active? && membership&.plan&.can_talk
+
+    forbidden("Talk permission required")
+  end
+
   def not_found(error)
     render json: { error: error.message, code: "not_found" }, status: :not_found
   end

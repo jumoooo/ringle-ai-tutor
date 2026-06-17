@@ -12,6 +12,11 @@ Rails.application.routes.draw do
         post "upgrade", to: "memberships#upgrade"
       end
 
+      post "stt", to: "stt#create"
+      post "tts", to: "tts#create"
+      post "chat", to: "chat_streams#create"
+      resources :conversations, only: %i[create show]
+
       namespace :admin do
         resources :users, only: %i[index] do
           resources :memberships, only: %i[create] do

@@ -12,6 +12,9 @@ gem "pg", "~> 1.1"
 gem "puma", ">= 5.0"
 gem "rack-cors"
 gem "dotenv-rails", groups: %i[development test]
+gem "ruby-openai", "~> 7.0"
+gem "rack-attack"
+gem "retryable"
 
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
