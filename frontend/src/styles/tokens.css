@@ -1,0 +1,71 @@
+:root {
+  /* === Colors === */
+  --color-primary: #6b4eff;
+  --color-primary-dark: #5238cc;
+  --color-primary-light: #ede9ff;
+  --color-primary-halo: rgba(107, 78, 255, 0.15);
+  --color-ai-bubble: #f0f0f8;
+  --color-user-bubble: #6b4eff;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f7f7fa;
+  --color-border: #e8e8f0;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #888899;
+  --color-text-on-primary: #ffffff;
+  --color-text-link: #6b4eff;
+  --color-disabled: #c4c4d4;
+  --color-timer-bar-bg: #e8e8f0;
+  --color-timer-bar-fill: #6b4eff;
+  --color-tag-green: #22c55e;
+  --color-promo-red: #ef4444;
+  --color-promo-orange: #f97316;
+
+  /* === Typography === */
+  --font-family-base: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 17px;
+  --font-size-3xl: 18px;
+  --font-size-4xl: 22px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+
+  /* === Spacing === */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+
+  /* === Border Radius === */
+  --radius-bubble: 18px;
+  --radius-bubble-sharp: 4px;
+  --radius-card: 16px;
+  --radius-chip: 999px;
+  --radius-fab: 50%;
+
+  /* === Component Sizes === */
+  --fab-size-default: 64px;
+  --tab-bar-height: 60px;
+  --mode-tab-height: 40px;
+  --header-height: 56px;
+  --progress-bar-height: 2px;
+  --avatar-size-lg: 64px;
+  --avatar-size-sm: 36px;
+
+  /* === Shadows === */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-fab: 0 4px 16px rgba(107, 78, 255, 0.35);
+  --shadow-halo-base: 0 0 0 8px rgba(107, 78, 255, 0.10);
+  --shadow-halo-max: 0 0 0 20px rgba(107, 78, 255, 0.06);
+  --shadow-mode-tab: 0 1px 4px rgba(0, 0, 0, 0.10);
+}

@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "@/config/api"
-import "./index.css"
+import "./styles/index.css"
 
 function App() {
   return (
