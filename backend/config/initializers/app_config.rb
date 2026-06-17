@@ -16,4 +16,8 @@ module AppConfig
   def backend_port
     ENV.fetch("BACKEND_PORT", "3000").to_i
   end
+
+  def admin_key
+    ENV.fetch("ADMIN_KEY", "dev-admin-key")
+  end
 end

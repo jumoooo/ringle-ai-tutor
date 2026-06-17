@@ -5,6 +5,8 @@ require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require 'rspec/rails'
+require "webmock/rspec"
+require "vcr"
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -57,6 +59,18 @@ RSpec.configure do |config|
   # The different available types are documented in the features, such as in
   # https://rspec.info/features/6-0/rspec-rails
   config.infer_spec_type_from_file_location!
+  config.include FactoryBot::Syntax::Methods
+
+  VCR.configure do |vcr|
+    vcr.cassette_library_dir = "spec/fixtures/vcr_cassettes"
+    vcr.hook_into :webmock
+    vcr.filter_sensitive_data("<OPENAI_API_KEY>") { ENV["OPENAI_API_KEY"] }
+    vcr.default_cassette_options = { record: :new_episodes }
+  end
+
+  config.before(:each) do
+    WebMock.disable_net_connect!(allow_localhost: true)
+  end
 
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!

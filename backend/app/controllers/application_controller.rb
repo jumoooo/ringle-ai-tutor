@@ -7,11 +7,20 @@ class ApplicationController < ActionController::API
   private
 
   def set_current_user
-    @current_user_id = request.headers["X-User-Id"]
+    user_id = request.headers["X-User-Id"]
+    @current_user = User.find_by(id: user_id) if user_id.present?
   end
 
-  def current_user_id
-    @current_user_id
+  def require_user!
+    return if @current_user
+
+    forbidden("User not found")
+  end
+
+  def require_admin!
+    return if request.headers["X-Admin-Key"] == AppConfig.admin_key
+
+    forbidden("Admin access required")
   end
 
   def not_found(error)
@@ -19,6 +28,10 @@ class ApplicationController < ActionController::API
   end
 
   def unprocessable_entity(error)
-    render json: { error: error.message, code: "invalid_record" }, status: :unprocessable_entity
+    render json: { error: error.message, code: "invalid_record" }, status: 422
+  end
+
+  def forbidden(message = "Forbidden")
+    render json: { error: message, code: "forbidden" }, status: :forbidden
   end
 end
