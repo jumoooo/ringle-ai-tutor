@@ -24,12 +24,13 @@ export async function uploadStt(audioBlob: Blob) {
   return SttResponseSchema.parse(response.data.data)
 }
 
-export async function fetchTts(text: string) {
+export async function fetchTts(text: string, signal?: AbortSignal) {
   const response = await apiClient.post(
     API_ENDPOINTS.tts,
     { text },
     {
-      responseType: "blob"
+      responseType: "blob",
+      signal
     }
   )
 

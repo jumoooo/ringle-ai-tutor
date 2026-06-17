@@ -41,21 +41,58 @@ export function float32ToWavBlob(
   return new Blob([buffer], { type: "audio/wav" })
 }
 
-export async function playAudioBlob(blob: Blob) {
-  const objectUrl = URL.createObjectURL(blob)
+// Singleton AudioContext — 한 번 resume되면 gesture 만료 없이 계속 재생 가능.
+// new Audio().play()는 COOP/COEP 환경에서 gesture activation 만료 시 NotAllowedError를 throw함.
+let sharedAudioContext: AudioContext | null = null
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const audio = new Audio(objectUrl)
-      audio.addEventListener("ended", () => resolve(), { once: true })
-      audio.addEventListener(
-        "error",
-        () => reject(new Error("Audio playback failed")),
+function getAudioContext(): AudioContext {
+  if (!sharedAudioContext || sharedAudioContext.state === "closed") {
+    sharedAudioContext = new AudioContext()
+  }
+  return sharedAudioContext
+}
+
+export async function playAudioBlob(
+  blob: Blob,
+  signal?: AbortSignal
+): Promise<void> {
+  if (signal?.aborted) return
+
+  const ctx = getAudioContext()
+
+  if (ctx.state === "suspended") {
+    await ctx.resume()
+  }
+
+  const arrayBuffer = await blob.arrayBuffer()
+
+  if (signal?.aborted) return
+
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+
+  if (signal?.aborted) return
+
+  await new Promise<void>((resolve) => {
+    const source = ctx.createBufferSource()
+    source.buffer = audioBuffer
+    source.connect(ctx.destination)
+    source.onended = () => resolve()
+
+    if (signal) {
+      signal.addEventListener(
+        "abort",
+        () => {
+          try {
+            source.stop()
+          } catch {
+            // 이미 중단된 경우 무시
+          }
+          resolve()
+        },
         { once: true }
       )
-      audio.play().catch(reject)
-    })
-  } finally {
-    URL.revokeObjectURL(objectUrl)
-  }
+    }
+
+    source.start()
+  })
 }

@@ -11,6 +11,7 @@ module Ai
           parameters: {
             model: "whisper-1",
             file: upload_file,
+            language: "en",
             response_format: "verbose_json"
           }
         )

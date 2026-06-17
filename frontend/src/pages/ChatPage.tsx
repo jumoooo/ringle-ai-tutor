@@ -19,7 +19,10 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import type { Message } from "@/types/message"
 
 type ChatState = "idle" | "recording" | "processing" | "streaming" | "speaking"
-type ChatMessage = Message & { audioBlobUrl?: string }
+type ChatMessage = Message & {
+  audioBlobUrl?: string
+  sentences?: string[]
+}
 
 export default function ChatPage() {
   const navigate = useNavigate()
@@ -34,6 +37,7 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState<number | null>(null)
   const [turnCount, setTurnCount] = useState(0)
   const [isInputDisabled, setIsInputDisabled] = useState(false)
+  const isInitializingRef = useRef(false)
 
   const handleTtsError = useCallback(
     (message: string) => {
@@ -43,9 +47,12 @@ export default function ChatPage() {
     [showToast]
   )
 
-  const { enqueue: enqueueTts, getBlobUrl } = useTtsQueue(handleTtsError)
+  const { enqueue: enqueueTts, flush: flushTts, replayAll } = useTtsQueue(handleTtsError)
 
   const initializeConversation = useCallback(async () => {
+    if (isInitializingRef.current) return
+    isInitializingRef.current = true
+
     try {
       const conversation = await createConversation()
       setConversationId(conversation.id)
@@ -54,22 +61,24 @@ export default function ChatPage() {
         String(conversation.id)
       )
 
+      const firstContent = conversation.first_message.content
       const firstMessage: ChatMessage = {
         id: Date.now(),
         role: "assistant",
-        content: conversation.first_message.content,
-        created_at: new Date().toISOString()
+        content: firstContent,
+        created_at: new Date().toISOString(),
+        sentences: [firstContent]
       }
 
       setMessages([firstMessage])
       setTurnCount(0)
       setStreamingContent("")
       setIsInputDisabled(false)
-      setChatState("speaking")
-      enqueueTts(conversation.first_message.content)
-      setChatState("idle")
+      enqueueTts(firstContent)
     } catch {
       showToast("대화를 시작하지 못했어요.", "error")
+    } finally {
+      isInitializingRef.current = false
     }
   }, [enqueueTts, showToast])
 
@@ -79,9 +88,11 @@ export default function ChatPage() {
         return
       }
 
+      flushTts()
       setChatState("processing")
 
       const audioBlobUrl = URL.createObjectURL(audioBlob)
+      const sentencesBuffer: string[] = []
 
       try {
         const sttResult = await uploadStt(audioBlob)
@@ -112,6 +123,7 @@ export default function ChatPage() {
             setStreamingContent(assistantContent)
           },
           onSentence: (sentence) => {
+            sentencesBuffer.push(sentence)
             setChatState("speaking")
             enqueueTts(sentence)
           },
@@ -122,7 +134,8 @@ export default function ChatPage() {
                 id: Date.now(),
                 role: "assistant",
                 content: assistantContent,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                sentences: [...sentencesBuffer]
               }
             ])
             setStreamingContent("")
@@ -144,6 +157,7 @@ export default function ChatPage() {
     [
       conversationId,
       enqueueTts,
+      flushTts,
       isInputDisabled,
       showToast,
       startChatStream
@@ -208,23 +222,33 @@ export default function ChatPage() {
       return
     }
 
+    let cancelled = false
+
     const storedConversationId = window.localStorage.getItem("lastConversationId")
 
     if (!storedConversationId) {
       void initializeConversation()
-      return
+      return () => {
+        cancelled = true
+      }
     }
 
     void fetchConversation(Number(storedConversationId))
       .then((conversation) => {
+        if (cancelled) return
         setConversationId(conversation.id)
         const restoredMessages = conversation.messages ?? []
         setMessages(restoredMessages)
         setTurnCount(Math.floor(restoredMessages.length / 2))
       })
       .catch(() => {
+        if (cancelled) return
         void initializeConversation()
       })
+
+    return () => {
+      cancelled = true
+    }
   }, [initializeConversation, membership?.plan.can_talk, userId])
 
   useEffect(() => {
@@ -311,14 +335,7 @@ export default function ChatPage() {
               onReplay={
                 message.role === "assistant"
                   ? () => {
-                      const audioUrl = getBlobUrl(message.content)
-
-                      if (audioUrl) {
-                        void new Audio(audioUrl).play()
-                        return
-                      }
-
-                      enqueueTts(message.content)
+                      replayAll(message.sentences ?? [message.content])
                     }
                   : undefined
               }
@@ -356,7 +373,10 @@ export default function ChatPage() {
             void vad.submit().then((submitted) => {
               if (!submitted) {
                 showToast("먼저 한 문장 이상 말해주세요.", "info")
+                return
               }
+              void vad.stop()
+              setChatState("processing")
             })
           }}
         />

@@ -377,3 +377,48 @@ VAD + Waveform + SSE 스트리밍 + TTS 큐 전체 파이프라인을 브라우�
 - TTS 실제 연동 확인: 21KB MP3 다운로드 성공 (nova 음성, tts-1 모델)
 - Chat SSE 동작 확인: OpenAI Tier 0 무료 한도(gpt-4o 429) 문제 — 코드 정상, API 크레딧 충전 필요
 - rework_count: 0 (Codex 피드백 반영 4개: access_token:, tempfile, Rack::Attack discriminator, test isolation)
+
+---
+
+## Phase 5 — TTS·STT 버그 수정 및 재생 안정화 (2026-06-18)
+
+**작업 형태:** Phase 4 수동 테스트 후 발견된 버그 패치 (Codex 한도 소진 → Claude 직접 수정)
+
+### 작업 배경 및 목표
+
+Phase 4 커밋(`9eb36ba`) 후 실제 AI 대화를 테스트하는 과정에서 6가지 버그가 발견됐다.  
+OpenAI API 크레딧 충전($10) 후 STT→Chat SSE→TTS 전체 파이프라인이 동작하는 환경에서 재현·분석·수정했다.
+
+### 발견된 버그 및 수정 내용
+
+| # | 증상 | 근본 원인 | 수정 파일 |
+|---|---|---|---|
+| 1 | 영어로 말했는데 한국어 텍스트로 표시 | Whisper-1 `language` 파라미터 미설정 → 한국어 OS 환경에서 자동 감지 오류 | `transcription_service.rb` |
+| 2 | TTS 소리 간헐적 미재생, 2턴 이후 완전 중단 | `new Audio().play()`가 COOP/COEP 헤더 환경에서 gesture activation 만료 시 `NotAllowedError` throw | `audio.ts` |
+| 3 | 재생 버튼 클릭 시 1~2분 뒤 소리 나옴 | `getBlobUrl(message.content)` key 불일치 — `blobUrlMapRef`는 문장 단위 key, 재생 버튼은 전체 content key로 조회 → miss → 전체 텍스트 TTS 재요청 | `useTtsQueue.ts`, `ChatPage.tsx` |
+| 4 | 페이지 진입 시 AI 첫 인사 TTS가 2번 재생 | React StrictMode 이중 useEffect 실행 + `initializeConversation`에 중복 실행 guard 없음 | `ChatPage.tsx` |
+| 5 | flush() 호출 시 진행 중인 HTTP 요청이 취소 안 됨 | `fetchTts`에 `AbortSignal`을 전달하지 않아 axios 요청이 계속 진행됨 | `api.ts`, `useTtsQueue.ts` |
+| 6 | 답변 완료 버튼 클릭 후 마이크가 켜진 채 유지 | `onSubmit` 핸들러에서 `vad.stop()` 미호출 | `ChatPage.tsx` |
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| TTS 재생 방식 교체 | `new Audio()` → `AudioContext` singleton | COOP/COEP(`Cross-Origin-Embedder-Policy: require-corp`) 헤더가 걸린 환경에서 `new Audio().play()`는 gesture activation 만료 시 실패. AudioContext는 한 번 `resume()` 되면 이후 gesture 없이도 계속 재생 가능 |
+| Blob 캐시 구조 | `text → objectURL` → `text → Blob` 직접 저장 | objectURL은 revoke 후 무효화되어 재생 버튼에서 재사용 불가. Blob 자체를 보관하면 `playAudioBlob()` 재호출 시 API 재요청 없이 즉시 재생 |
+| `isInitializingRef` guard | `useCallback` 내부에 ref guard 삽입 | StrictMode unmount-remount 사이에 두 번째 호출이 들어올 때 API 중복 호출 방지. cleanup 함수의 `cancelled` 플래그와 이중 방어 |
+
+### 주요 프롬프트 예시
+
+> "지금 문제가 있어... 영어로 답했는데 한국어로 나의 채팅이 올라와. 그리고 TTS 가 나올 때가 있고 안나올 때가 있어. 깊게 생각해보고 답해줘"
+
+> "두 번째 AI 답변에서 재생 버튼 누르면 소리가 엄청 늦게 나와 (약 1~2분 뒤). 깊게 생각해보고 이유 찾아봐줘"
+
+### 최종 결과 요약
+
+- STT: `language: "en"` 고정 → 영어 발화가 영어 텍스트로 올바르게 인식
+- TTS 자동 재생: AudioContext 기반으로 안정적 재생 (2턴 이후도 정상)
+- 재생 버튼: `sentences[]` 단위로 Blob 캐시 hit → API 재호출 없이 즉시 재생
+- StrictMode 중복 재생 제거: `isInitializingRef` + `cancelled` 이중 guard
+- flush 시 HTTP 요청 실제 취소: `AbortSignal`을 `fetchTts` axios 요청에 전달
+- 답변 완료 시 마이크 자동 off
