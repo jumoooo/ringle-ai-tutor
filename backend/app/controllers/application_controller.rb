@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::API
   MAX_USER_INPUT_CHARS = 2000
+  MAX_AUDIO_SIZE_BYTES = 2 * 1024 * 1024
 
   before_action :set_current_user
 

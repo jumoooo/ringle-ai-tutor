@@ -40,6 +40,35 @@ RSpec.describe "STT API", type: :request do
         expect(payload.dig("data", "transcript")).to eq("Hello, I would like to practice my pronunciation.")
         expect(payload.dig("data", "duration_ms")).to eq(2340)
       end
+
+      context "오디오 파일 미첨부" do
+        it "422와 audio_missing을 반환한다" do
+          post "/api/v1/stt",
+               params: {},
+               headers: { "X-User-Id" => user.id }
+
+          expect(response).to have_http_status(422)
+          expect(JSON.parse(response.body)["code"]).to eq("audio_missing")
+        end
+      end
+
+      context "2MB 초과 오디오 파일" do
+        it "422와 audio_too_large를 반환한다" do
+          large_tempfile = Tempfile.new(["large", ".wav"])
+          large_tempfile.write("x" * (3 * 1024 * 1024))
+          large_tempfile.flush
+          large_tempfile.close
+
+          post "/api/v1/stt",
+               params: { audio: Rack::Test::UploadedFile.new(large_tempfile.path, "audio/wav") },
+               headers: { "X-User-Id" => user.id }
+
+          expect(response).to have_http_status(422)
+          expect(JSON.parse(response.body)["code"]).to eq("audio_too_large")
+        ensure
+          large_tempfile.unlink
+        end
+      end
     end
 
     context "만료된 멤버십" do

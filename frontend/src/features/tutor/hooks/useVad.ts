@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { MicVAD as MicVadInstance } from "@ricky0123/vad-web"
 import { float32ToWavBlob } from "@/utils/audio"
 
+const SAMPLE_RATE_HZ = 16000
+const MAX_SPEECH_DURATION_SEC = 30
+
 interface UseVadOptions {
   onSpeechDetected: (audioBlob: Blob) => Promise<void>
 }
@@ -100,9 +103,19 @@ export function useVad({ onSpeechDetected }: UseVadOptions) {
             streamRef.current = null
           },
           onSpeechStart: () => {
+            setError(null)
             resetInactivityTimer()
           },
           onSpeechEnd: (audio) => {
+            const durationSec = audio.length / SAMPLE_RATE_HZ
+            if (durationSec > MAX_SPEECH_DURATION_SEC) {
+              pendingAudioRef.current = null
+              setError(
+                `발화가 너무 길어요. ${MAX_SPEECH_DURATION_SEC}초 이내로 말씀해주세요.`
+              )
+              resetInactivityTimer()
+              return
+            }
             pendingAudioRef.current = audio
             resetInactivityTimer()
           },

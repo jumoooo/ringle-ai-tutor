@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
+import { SkeletonBlock } from "@/components/ui/Skeleton"
 import { useMembership } from "@/features/membership/hooks/useMembership"
 import {
   createConversation,
@@ -16,6 +17,7 @@ import { useChatStream } from "@/features/tutor/hooks/useChatStream"
 import { useTtsQueue } from "@/features/tutor/hooks/useTtsQueue"
 import { useVad } from "@/features/tutor/hooks/useVad"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
+import type { AxiosError } from "axios"
 import type { Message } from "@/types/message"
 
 type ChatState = "idle" | "recording" | "processing" | "streaming" | "speaking"
@@ -149,8 +151,16 @@ export default function ChatPage() {
             setChatState("idle")
           }
         })
-      } catch {
-        showToast("음성 처리 중 오류가 발생했어요.", "error")
+      } catch (err) {
+        const code = (err as AxiosError<{ code?: string }>)?.response?.data
+          ?.code
+        if (code === "audio_too_large") {
+          showToast("녹음이 너무 길어요. 30초 이내로 말씀해주세요.", "error")
+        } else if (code === "audio_missing") {
+          showToast("오디오 파일이 전달되지 않았어요.", "error")
+        } else {
+          showToast("음성 처리 중 오류가 발생했어요.", "error")
+        }
         setChatState("idle")
       }
     },
@@ -271,11 +281,13 @@ export default function ChatPage() {
       <Layout title="AI 튜터 대화" description="">
         <div
           style={{
-            padding: "var(--space-20)",
-            color: "var(--color-text-secondary)"
+            display: "grid",
+            gap: "var(--space-16)",
+            padding: "var(--space-20)"
           }}
         >
-          불러오는 중...
+          <SkeletonBlock width="200px" height="28px" />
+          <SkeletonBlock width="100%" height="120px" />
         </div>
       </Layout>
     )
