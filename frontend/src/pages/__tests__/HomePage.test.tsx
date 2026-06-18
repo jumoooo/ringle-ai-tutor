@@ -175,4 +175,62 @@ describe("HomePage", () => {
 
     expect(screen.queryByText("결제 정보 입력")).not.toBeInTheDocument()
   })
+
+  it("만료까지 32비트 한계(24.8일)를 초과하면 만료 토스트를 표시하지 않아요", () => {
+    vi.useFakeTimers()
+
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    setupMocks({
+      membership: { ...activeMembership, expires_at: expiresAt }
+    })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    act(() => { vi.advanceTimersByTime(2_200_000_000) })
+
+    expect(mockShowToast).not.toHaveBeenCalledWith(
+      "멤버십이 만료되었습니다. 플랜을 구매하세요.",
+      "info"
+    )
+
+    vi.useRealTimers()
+  })
+
+  it("만료까지 24.8일 미만이면 만료 시 토스트를 표시해요", () => {
+    vi.useFakeTimers()
+
+    const oneHourMs = 60 * 60 * 1000
+    const expiresAt = new Date(Date.now() + oneHourMs).toISOString()
+    const refetch = vi.fn()
+    setupMocks({
+      membership: { ...activeMembership, expires_at: expiresAt },
+      refetch
+    })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    act(() => { vi.advanceTimersByTime(oneHourMs + 100) })
+
+    expect(mockShowToast).toHaveBeenCalledWith(
+      "멤버십이 만료되었습니다. 플랜을 구매하세요.",
+      "info"
+    )
+    expect(refetch).toHaveBeenCalled()
+
+    vi.useRealTimers()
+  })
+
+  it("이미 만료된 멤버십은 타이머 없이 즉시 refetch해요", () => {
+    const refetch = vi.fn()
+    const expiresAt = new Date(Date.now() - 1000).toISOString()
+    setupMocks({
+      membership: { ...activeMembership, expires_at: expiresAt },
+      refetch
+    })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    expect(refetch).toHaveBeenCalled()
+    expect(mockShowToast).not.toHaveBeenCalledWith(
+      "멤버십이 만료되었습니다. 플랜을 구매하세요.",
+      "info"
+    )
+  })
 })

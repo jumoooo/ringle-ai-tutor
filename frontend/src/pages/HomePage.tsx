@@ -70,9 +70,7 @@ export default function HomePage() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
 
   useEffect(() => {
-    if (!membership?.expires_at) {
-      return
-    }
+    if (!membership?.expires_at) return
 
     const remainingTime = new Date(membership.expires_at).getTime() - Date.now()
 
@@ -81,14 +79,17 @@ export default function HomePage() {
       return
     }
 
+    // setTimeout은 32비트 정수 한계(~24.8일)를 초과하면 즉시 실행됨
+    // 그 이상 남은 멤버십은 페이지 재방문 시 처리되므로 타이머 불필요
+    const MAX_TIMEOUT_MS = 2_147_483_647
+    if (remainingTime > MAX_TIMEOUT_MS) return
+
     const timerId = window.setTimeout(() => {
       void refetchMembership()
       showToast("멤버십이 만료되었습니다. 플랜을 구매하세요.", "info")
     }, remainingTime)
 
-    return () => {
-      window.clearTimeout(timerId)
-    }
+    return () => window.clearTimeout(timerId)
   }, [membership?.expires_at, refetchMembership, showToast])
 
   const canTalk = membership?.status === "active" && membership.plan.can_talk
