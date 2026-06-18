@@ -10,7 +10,20 @@ export default function Waveform({ stream, isActive }: WaveformProps) {
   const animationFrameRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!stream || !isActive || !canvasRef.current) {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    if (!stream || !isActive) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.beginPath()
+      ctx.lineWidth = 2
+      ctx.strokeStyle = "var(--color-border)"
+      ctx.moveTo(0, canvas.height / 2)
+      ctx.lineTo(canvas.width, canvas.height / 2)
+      ctx.stroke()
       return
     }
 
@@ -21,24 +34,16 @@ export default function Waveform({ stream, isActive }: WaveformProps) {
     const source = audioContext.createMediaStreamSource(stream)
     source.connect(analyser)
 
-    const canvas = canvasRef.current
-    const context = canvas.getContext("2d")
-
-    if (!context) {
-      void audioContext.close()
-      return
-    }
-
     const waveformData = new Uint8Array(analyser.frequencyBinCount)
 
     const draw = () => {
       animationFrameRef.current = window.requestAnimationFrame(draw)
 
       analyser.getByteTimeDomainData(waveformData)
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.beginPath()
-      context.lineWidth = 2
-      context.strokeStyle = "var(--color-primary)"
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.beginPath()
+      ctx.lineWidth = 2
+      ctx.strokeStyle = "var(--color-primary)"
 
       const sliceWidth = canvas.width / waveformData.length
       let currentX = 0
@@ -48,15 +53,15 @@ export default function Waveform({ stream, isActive }: WaveformProps) {
         const currentY = (sample * canvas.height) / 2
 
         if (index === 0) {
-          context.moveTo(currentX, currentY)
+          ctx.moveTo(currentX, currentY)
         } else {
-          context.lineTo(currentX, currentY)
+          ctx.lineTo(currentX, currentY)
         }
 
         currentX += sliceWidth
       }
 
-      context.stroke()
+      ctx.stroke()
     }
 
     draw()
