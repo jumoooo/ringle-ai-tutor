@@ -61,6 +61,7 @@ RSpec.configure do |config|
   # https://rspec.info/features/6-0/rspec-rails
   config.infer_spec_type_from_file_location!
   config.include FactoryBot::Syntax::Methods
+  config.include ActiveSupport::Testing::TimeHelpers
 
   VCR.configure do |vcr|
     vcr.cassette_library_dir = "spec/fixtures/vcr_cassettes"

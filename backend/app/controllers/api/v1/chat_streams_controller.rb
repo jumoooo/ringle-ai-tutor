@@ -5,6 +5,7 @@ module Api
 
       before_action :require_user!
       before_action :require_talk_access!
+      before_action :validate_message_length!
 
       def create
         response.headers["Content-Type"] = "text/event-stream"
@@ -28,6 +29,14 @@ module Api
         response.stream.write("data: #{JSON.generate({ type: "error", message: "Internal error" })}\n\n")
       ensure
         response.stream.close
+      end
+
+      private
+
+      def validate_message_length!
+        return unless params[:message].to_s.length > MAX_USER_INPUT_CHARS
+
+        render json: { error: "Message too long", code: "message_too_long" }, status: 422
       end
     end
   end

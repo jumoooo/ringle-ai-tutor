@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::API
+  MAX_USER_INPUT_CHARS = 2000
+
   before_action :set_current_user
 
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
