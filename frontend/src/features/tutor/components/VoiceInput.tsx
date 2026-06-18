@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 interface VoiceInputProps {
   isActive: boolean
   isDisabled: boolean
@@ -33,6 +35,13 @@ export default function VoiceInput({
   onToggleMic,
   onSubmit
 }: VoiceInputProps) {
+  const [isMicHovered, setIsMicHovered] = useState(false)
+  const [isCompleteHovered, setIsCompleteHovered] = useState(false)
+
+  const useMicHoverStyle = isMicHovered && !isDisabled
+  const isCompleteDisabled = isDisabled || !isActive
+  const useCompleteHoverStyle = isCompleteHovered && !isCompleteDisabled
+
   return (
     <section
       style={{
@@ -66,6 +75,8 @@ export default function VoiceInput({
           type="button"
           disabled={isDisabled}
           onClick={onToggleMic}
+          onMouseEnter={() => setIsMicHovered(true)}
+          onMouseLeave={() => setIsMicHovered(false)}
           style={{
             minHeight: "48px",
             minWidth: "120px",
@@ -73,10 +84,17 @@ export default function VoiceInput({
             borderRadius: "var(--radius-card)",
             backgroundColor: isActive
               ? "var(--color-promo-red)"
-              : "var(--color-primary)",
+              : useMicHoverStyle
+                ? "var(--color-primary-dark)"
+                : "var(--color-primary)",
             color: "var(--color-text-on-primary)",
             cursor: isDisabled ? "not-allowed" : "pointer",
-            opacity: isDisabled ? 0.6 : 1
+            opacity: isDisabled ? 0.6 : 1,
+            transform: useMicHoverStyle ? "scale(1.05)" : "scale(1)",
+            filter:
+              useMicHoverStyle && isActive ? "brightness(0.85)" : "none",
+            transition:
+              "background-color 150ms ease, color 150ms ease, transform 150ms ease, filter 150ms ease"
           }}
         >
           {isActive ? "마이크 끄기" : "마이크 켜기"}
@@ -84,17 +102,27 @@ export default function VoiceInput({
 
         <button
           type="button"
-          disabled={isDisabled || !isActive}
+          disabled={isCompleteDisabled}
           onClick={onSubmit}
+          onMouseEnter={() => setIsCompleteHovered(true)}
+          onMouseLeave={() => setIsCompleteHovered(false)}
           style={{
             minHeight: "48px",
             minWidth: "120px",
             border: "1px solid var(--color-border)",
             borderRadius: "var(--radius-card)",
-            backgroundColor: "var(--color-surface-subtle)",
-            color: "var(--color-text-primary)",
-            cursor: isDisabled || !isActive ? "not-allowed" : "pointer",
-            opacity: isDisabled || !isActive ? 0.6 : 1
+            backgroundColor: useCompleteHoverStyle
+              ? "var(--color-primary-light)"
+              : "var(--color-surface)",
+            color: useCompleteHoverStyle
+              ? "var(--color-primary)"
+              : "var(--color-text-primary)",
+            cursor: isCompleteDisabled ? "not-allowed" : "pointer",
+            opacity: isCompleteDisabled ? 0.6 : 1,
+            transform: useCompleteHoverStyle ? "scale(1.05)" : "scale(1)",
+            filter: "none",
+            transition:
+              "background-color 150ms ease, color 150ms ease, transform 150ms ease, filter 150ms ease"
           }}
         >
           답변 완료

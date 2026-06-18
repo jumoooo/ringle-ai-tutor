@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 interface ChatBubbleProps {
   role: "user" | "assistant"
   content: string
@@ -22,6 +24,7 @@ export default function ChatBubble({
   onReplay
 }: ChatBubbleProps) {
   const isUser = role === "user"
+  const [isPlayHovered, setIsPlayHovered] = useState(false)
 
   return (
     <div
@@ -97,6 +100,8 @@ export default function ChatBubble({
           {audioBlobUrl || onReplay ? (
             <button
               type="button"
+              onMouseEnter={() => setIsPlayHovered(true)}
+              onMouseLeave={() => setIsPlayHovered(false)}
               onClick={() => {
                 if (audioBlobUrl) {
                   void new Audio(audioBlobUrl).play()
@@ -109,11 +114,16 @@ export default function ChatBubble({
               style={{
                 border: "1px solid var(--color-border)",
                 borderRadius: "var(--radius-chip)",
-                backgroundColor: "var(--color-surface)",
+                backgroundColor: "var(--color-surface-subtle)",
                 color: "var(--color-text-primary)",
                 cursor: "pointer",
                 minHeight: "28px",
-                minWidth: "44px"
+                minWidth: "44px",
+                padding: "0 var(--space-8)",
+                transform: "scale(1)",
+                filter: isPlayHovered ? "brightness(0.9)" : "none",
+                transition:
+                  "background-color 150ms ease, color 150ms ease, transform 150ms ease, filter 150ms ease"
               }}
             >
               ▶
