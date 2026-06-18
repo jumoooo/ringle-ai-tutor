@@ -38,5 +38,20 @@ RSpec.describe "TTS API", type: :request do
         expect(response.headers["Content-Type"]).to include("audio/mpeg")
       end
     end
+
+    context "만료된 멤버십" do
+      before do
+        create(:membership, user: user, plan: standard_plan,
+               status: "active", expires_at: 1.minute.ago)
+      end
+
+      it "403을 반환한다" do
+        post "/api/v1/tts",
+             params: { text: "Hello" }.to_json,
+             headers: { "X-User-Id" => user.id, "Content-Type" => "application/json" }
+
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
   end
 end

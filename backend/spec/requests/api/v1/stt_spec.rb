@@ -42,6 +42,21 @@ RSpec.describe "STT API", type: :request do
       end
     end
 
+    context "만료된 멤버십" do
+      before do
+        create(:membership, user: user, plan: standard_plan,
+               status: "active", expires_at: 1.minute.ago)
+      end
+
+      it "403을 반환한다" do
+        post "/api/v1/stt",
+             params: { audio: fixture_file_upload("spec/fixtures/audio/hello.webm", "audio/webm") },
+             headers: { "X-User-Id" => user.id }
+
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
     context "X-User-Id 없을 때" do
       it "403을 반환한다" do
         post "/api/v1/stt"

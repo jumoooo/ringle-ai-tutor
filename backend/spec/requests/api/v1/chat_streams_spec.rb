@@ -18,6 +18,17 @@ RSpec.describe "Chat Streams API", type: :request do
 
         expect(response).to have_http_status(:forbidden)
       end
+
+      it "만료된 멤버십이면 403을 반환한다" do
+        create(:membership, user: user, plan: standard_plan,
+               status: "active", expires_at: 1.minute.ago)
+
+        post "/api/v1/chat",
+             params: { conversation_id: 1, message: "Hello" }.to_json,
+             headers: json_headers
+
+        expect(response).to have_http_status(:forbidden)
+      end
     end
 
     context "입력 검증" do
