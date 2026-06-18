@@ -3,7 +3,11 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "health", to: "health#show"
 
-      resources :users, only: %i[index show]
+      resources :users, only: %i[index show] do
+        collection do
+          get :me
+        end
+      end
       resources :plans, only: %i[index]
 
       scope :memberships do

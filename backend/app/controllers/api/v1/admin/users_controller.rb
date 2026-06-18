@@ -2,6 +2,7 @@ module Api
   module V1
     module Admin
       class UsersController < ApplicationController
+        before_action :require_user!
         before_action :require_admin!
 
         def index

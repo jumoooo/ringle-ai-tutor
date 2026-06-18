@@ -25,14 +25,18 @@ Plan.find_or_create_by!(name: "프리미엄 플러스") do |plan|
   plan.features = {}
 end
 
-[
-  { name: "Alice Kim", email: "alice@example.com" },
-  { name: "Bob Lee", email: "bob@example.com" },
-  { name: "Carol Park", email: "carol@example.com" }
-].each do |user_attributes|
+seed_users = [
+  { name: "Alice Kim", email: "alice@example.com", role: "admin" },
+  { name: "Bob Lee", email: "bob@example.com", role: nil },
+  { name: "Carol Park", email: "carol@example.com", role: nil }
+]
+
+seed_users.each do |user_attributes|
   user = User.find_or_create_by!(email: user_attributes[:email]) do |record|
     record.name = user_attributes[:name]
   end
+
+  user.update!(role: user_attributes[:role])
 
   next if user.memberships.current.exists?
 

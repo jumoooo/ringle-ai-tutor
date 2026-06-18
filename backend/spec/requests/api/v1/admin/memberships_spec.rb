@@ -1,15 +1,18 @@
 require "rails_helper"
 
 RSpec.describe "Admin Memberships API", type: :request do
-  let(:admin_key) { AppConfig.admin_key }
   let(:user) { create(:user) }
   let(:premium_plan) { create(:plan, :premium) }
+  let(:admin_user) { create(:user, :admin) }
 
   describe "POST /api/v1/admin/users/:user_id/memberships" do
     it "멤버십 부여에 성공한다" do
       post "/api/v1/admin/users/#{user.id}/memberships",
            params: { plan_id: premium_plan.id, duration_days: 30 }.to_json,
-           headers: { "X-Admin-Key" => admin_key, "Content-Type" => "application/json" }
+           headers: {
+             "X-User-Id" => admin_user.id.to_s,
+             "Content-Type" => "application/json"
+           }
 
       expect(response).to have_http_status(:created)
       payload = JSON.parse(response.body)
@@ -21,12 +24,28 @@ RSpec.describe "Admin Memberships API", type: :request do
 
       post "/api/v1/admin/users/#{user.id}/memberships",
            params: { plan_id: premium_plan.id, duration_days: 30 }.to_json,
-           headers: { "X-Admin-Key" => admin_key, "Content-Type" => "application/json" }
+           headers: {
+             "X-User-Id" => admin_user.id.to_s,
+             "Content-Type" => "application/json"
+           }
 
       expect(old_membership.reload.status).to eq("expired")
     end
 
-    it "키가 없으면 403을 반환한다" do
+    it "일반 유저면 403을 반환한다" do
+      non_admin_user = create(:user)
+
+      post "/api/v1/admin/users/#{user.id}/memberships",
+           params: { plan_id: premium_plan.id }.to_json,
+           headers: {
+             "X-User-Id" => non_admin_user.id.to_s,
+             "Content-Type" => "application/json"
+           }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "헤더가 없으면 403을 반환한다" do
       post "/api/v1/admin/users/#{user.id}/memberships",
            params: { plan_id: premium_plan.id }.to_json,
            headers: { "Content-Type" => "application/json" }
@@ -40,7 +59,7 @@ RSpec.describe "Admin Memberships API", type: :request do
       create(:membership, user: user, plan: premium_plan, status: "active", expires_at: 30.days.from_now)
 
       delete "/api/v1/admin/users/#{user.id}/memberships/current",
-             headers: { "X-Admin-Key" => admin_key }
+             headers: { "X-User-Id" => admin_user.id.to_s }
 
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body).dig("data", "revoked")).to be(true)

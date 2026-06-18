@@ -1,13 +1,13 @@
 require "rails_helper"
 
 RSpec.describe "Admin Users API", type: :request do
-  let(:admin_key) { AppConfig.admin_key }
-
   describe "GET /api/v1/admin/users" do
-    it "올바른 키면 유저 목록을 반환한다" do
-      create(:user)
+    let!(:member_user) { create(:user) }
 
-      get "/api/v1/admin/users", headers: { "X-Admin-Key" => admin_key }
+    it "admin 유저면 유저 목록을 반환한다" do
+      admin_user = create(:user, :admin)
+
+      get "/api/v1/admin/users", headers: { "X-User-Id" => admin_user.id.to_s }
 
       expect(response).to have_http_status(:ok)
       payload = JSON.parse(response.body)
@@ -15,16 +15,22 @@ RSpec.describe "Admin Users API", type: :request do
       expect(payload["data"].first.keys).to include("id", "name", "membership")
     end
 
-    it "키가 없으면 403을 반환한다" do
-      get "/api/v1/admin/users"
+    it "일반 유저면 403을 반환한다" do
+      user = create(:user)
+
+      get "/api/v1/admin/users", headers: { "X-User-Id" => user.id.to_s }
 
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "키가 틀리면 403을 반환한다" do
-      get "/api/v1/admin/users", headers: { "X-Admin-Key" => "wrong-key" }
+    it "헤더가 없으면 403을 반환한다" do
+      get "/api/v1/admin/users"
 
       expect(response).to have_http_status(:forbidden)
+      expect(JSON.parse(response.body)).to include(
+        "error" => "User not found",
+        "code" => "forbidden"
+      )
     end
   end
 end

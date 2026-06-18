@@ -20,7 +20,7 @@ class ApplicationController < ActionController::API
   end
 
   def require_admin!
-    return if request.headers["X-Admin-Key"] == AppConfig.admin_key
+    return if @current_user&.admin?
 
     forbidden("Admin access required")
   end
