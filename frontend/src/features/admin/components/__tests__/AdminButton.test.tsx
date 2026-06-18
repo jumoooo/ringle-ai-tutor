@@ -1,8 +1,31 @@
 import { fireEvent, render, screen } from "@testing-library/react"
+import type { ButtonProps } from "@/components/ui/Button"
 import AdminButton from "@/features/admin/components/AdminButton"
 import UserMembershipTable from "@/features/admin/components/UserMembershipTable"
 import type { AdminUser } from "@/features/admin/api"
 import type { Plan } from "@/types/membership"
+
+vi.mock("@/components/ui/Button", () => ({
+  default: ({
+    label,
+    variant,
+    onClick,
+    disabled = false,
+    disabledReason = null
+  }: ButtonProps) => (
+    <button
+      type="button"
+      data-testid={`mock-button-${label}`}
+      data-variant={variant}
+      data-disabled-reason={disabledReason ?? ""}
+      disabled={disabled}
+      onClick={onClick}
+      style={{ cursor: disabledReason === "submitting" ? "progress" : disabled ? "not-allowed" : "pointer" }}
+    >
+      {label}
+    </button>
+  )
+}))
 
 const adminUsers: AdminUser[] = [
   {
@@ -36,7 +59,7 @@ const plans: Plan[] = [
 ]
 
 describe("AdminButton", () => {
-  it("hover 시 plan-inactive variant 색상과 scale이 바뀌어요", () => {
+  it("plan-inactive variant를 secondary Button으로 위임해요", () => {
     render(
       <AdminButton
         label="프리미엄 플러스"
@@ -45,23 +68,13 @@ describe("AdminButton", () => {
       />
     )
 
-    const button = screen.getByRole("button", { name: "프리미엄 플러스" })
-    expect(button).toHaveStyle({
-      backgroundColor: "var(--color-surface-subtle)",
-      color: "var(--color-text-primary)",
-      transform: "scale(1)"
-    })
-
-    fireEvent.mouseEnter(button)
-
-    expect(button).toHaveStyle({
-      backgroundColor: "var(--color-primary-light)",
-      color: "var(--color-primary)",
-      transform: "scale(1.05)"
-    })
+    expect(screen.getByTestId("mock-button-프리미엄 플러스")).toHaveAttribute(
+      "data-variant",
+      "secondary"
+    )
   })
 
-  it("disabled submitting이면 hover 없이 progress cursor를 유지해요", () => {
+  it("disabledReason=\"submitting\"을 Button에 그대로 위임해요", () => {
     render(
       <AdminButton
         label="현재 플랜"
@@ -72,19 +85,13 @@ describe("AdminButton", () => {
       />
     )
 
-    const button = screen.getByRole("button", { name: "현재 플랜" })
-    fireEvent.mouseEnter(button)
-
-    expect(button).toHaveStyle({
-      backgroundColor: "var(--color-primary)",
-      color: "var(--color-text-on-primary)",
-      cursor: "progress",
-      opacity: "0.6",
-      transform: "scale(1)"
-    })
+    expect(screen.getByTestId("mock-button-현재 플랜")).toHaveAttribute(
+      "data-disabled-reason",
+      "submitting"
+    )
   })
 
-  it("focus 시 primary outline을 표시해요", () => {
+  it("danger variant를 danger Button으로 위임해요", () => {
     render(
       <AdminButton
         label="삭제"
@@ -93,28 +100,25 @@ describe("AdminButton", () => {
       />
     )
 
-    const button = screen.getByRole("button", { name: "삭제" })
-    fireEvent.focus(button)
-
-    expect(button).toHaveStyle({
-      outline: "2px solid var(--color-primary)",
-      outlineOffset: "2px"
-    })
+    expect(screen.getByTestId("mock-button-삭제")).toHaveAttribute(
+      "data-variant",
+      "danger"
+    )
   })
 
-  it("transition은 background-color, color, transform만 사용해요", () => {
+  it("onClick 동작은 그대로 유지해요", () => {
+    const handleClick = vi.fn()
     render(
       <AdminButton
-        label="삭제"
-        variant="danger"
-        onClick={() => {}}
+        label="구매"
+        variant="plan-active"
+        onClick={handleClick}
       />
     )
 
-    expect(screen.getByRole("button", { name: "삭제" })).toHaveStyle({
-      transition:
-        "background-color 150ms ease, color 150ms ease, transform 150ms ease"
-    })
+    fireEvent.click(screen.getByRole("button", { name: "구매" }))
+
+    expect(handleClick).toHaveBeenCalledTimes(1)
   })
 })
 

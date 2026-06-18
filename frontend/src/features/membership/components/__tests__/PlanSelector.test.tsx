@@ -84,6 +84,21 @@ describe("PlanSelector", () => {
     buttons.forEach((btn) => expect(btn).toBeDisabled())
   })
 
+  it("구매 버튼은 공통 Button transition을 사용해요", () => {
+    render(
+      <PlanSelector
+        plans={plans}
+        currentMembership={null}
+        onSelectPlan={() => {}}
+      />
+    )
+
+    expect(screen.getAllByRole("button", { name: "구매" })[0]).toHaveStyle({
+      transition:
+        "background-color 150ms ease, color 150ms ease, transform 150ms ease"
+    })
+  })
+
   it("모든 플랜 액션 버튼이 동일한 data-testid를 가져요", () => {
     render(
       <PlanSelector

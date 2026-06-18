@@ -117,6 +117,16 @@ describe("HomePage", () => {
     expect(navigate).toHaveBeenCalledWith("/chat")
   })
 
+  it("\"학습 시작\" 버튼은 secondary Button 기준 배경을 사용해요", () => {
+    setupMocks({ membership: activeMembership })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    expect(screen.getByRole("button", { name: "학습 시작" })).toHaveStyle({
+      backgroundColor: "var(--color-surface-subtle)",
+      minHeight: "48px"
+    })
+  })
+
   it("UpgradePromptModal '닫기' 클릭 시 모달이 닫혀요", () => {
     setupMocks({ membership: null })
     render(<HomePage />, { wrapper: makeWrapper() })

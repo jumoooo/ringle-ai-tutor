@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/api/client"
+import Button from "@/components/ui/Button"
 import { API_ENDPOINTS } from "@/config/api"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { UserArraySchema } from "@/types/user"
@@ -69,21 +70,15 @@ export default function UserDropdown() {
           ))}
         </select>
 
-        <button
-          type="button"
-          onClick={clearUser}
-          disabled={userId === null}
-          style={{
-            minWidth: "72px",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-card)",
-            backgroundColor: "var(--color-surface)",
-            color: "var(--color-text-primary)",
-            cursor: userId === null ? "not-allowed" : "pointer"
-          }}
-        >
-          초기화
-        </button>
+        <div style={{ minWidth: "72px" }}>
+          <Button
+            label="초기화"
+            variant="ghost"
+            onClick={clearUser}
+            disabled={userId === null}
+            disabledReason={userId === null ? "unavailable" : null}
+          />
+        </div>
       </div>
     </div>
   )

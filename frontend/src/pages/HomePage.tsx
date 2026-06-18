@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import Button from "@/components/ui/Button"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
 import MembershipCard from "@/features/membership/components/MembershipCard"
@@ -13,47 +14,6 @@ import {
 } from "@/features/membership/hooks/useMembership"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import type { Plan } from "@/types/membership"
-
-function ActionButton({
-  label,
-  disabled,
-  onClick,
-  tone
-}: {
-  label: string
-  disabled: boolean
-  onClick: () => void
-  tone: "primary" | "secondary"
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      style={{
-        minHeight: "48px",
-        padding: "0 var(--space-16)",
-        borderRadius: "var(--radius-card)",
-        border:
-          tone === "primary"
-            ? "none"
-            : "1px solid var(--color-border)",
-        backgroundColor:
-          tone === "primary"
-            ? "var(--color-primary)"
-            : "var(--color-surface)",
-        color:
-          tone === "primary"
-            ? "var(--color-text-on-primary)"
-            : "var(--color-text-primary)",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.6 : 1
-      }}
-    >
-      {label}
-    </button>
-  )
-}
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -122,12 +82,13 @@ export default function HomePage() {
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "var(--space-12)"
+            gap: "var(--space-12)",
+            alignItems: "stretch"
           }}
         >
-          <ActionButton
+          <Button
             label="대화 시작"
-            disabled={false}
+            variant="primary"
             onClick={() => {
               if (!canTalk) {
                 setShowUpgradeModal(true)
@@ -135,12 +96,14 @@ export default function HomePage() {
               }
               void navigate("/chat")
             }}
-            tone="primary"
+            minHeight="48px"
           />
 
-          <ActionButton
+          <Button
             label="학습 시작"
+            variant="secondary"
             disabled={!canLearn}
+            disabledReason={!canLearn ? "unavailable" : null}
             onClick={() => {
               if (!canLearn) {
                 showToast("학습 기능은 베이직 이상 멤버십이 필요해요.", "info")
@@ -148,7 +111,7 @@ export default function HomePage() {
               }
               void navigate("/learn")
             }}
-            tone="secondary"
+            minHeight="48px"
           />
         </section>
 

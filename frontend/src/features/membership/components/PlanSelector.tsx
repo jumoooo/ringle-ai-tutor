@@ -1,3 +1,4 @@
+import Button from "@/components/ui/Button"
 import type { Membership, Plan } from "@/types/membership"
 
 interface PlanSelectorProps {
@@ -88,7 +89,7 @@ export default function PlanSelector({
                   minHeight: "44px",
                   boxSizing: "border-box",
                   border: "1px solid transparent",
-                  borderRadius: "var(--radius-card)",
+                  borderRadius: "var(--radius-chip)",
                   backgroundColor: "var(--color-disabled)",
                   color: "var(--color-text-on-primary)",
                   alignSelf: "end"
@@ -97,24 +98,24 @@ export default function PlanSelector({
                 현재 플랜
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => onSelectPlan(plan)}
-                disabled={isPending}
-                data-testid="plan-action-btn"
+              <div
                 style={{
-                  minHeight: "44px",
-                  boxSizing: "border-box",
-                  border: "1px solid transparent",
-                  borderRadius: "var(--radius-card)",
-                  backgroundColor: "var(--color-primary)",
-                  color: "var(--color-text-on-primary)",
-                  cursor: isPending ? "progress" : "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "100%",
                   alignSelf: "end"
                 }}
               >
-                구매
-              </button>
+                <Button
+                  label="구매"
+                  variant="primary"
+                  onClick={() => onSelectPlan(plan)}
+                  disabled={isPending}
+                  disabledReason={isPending ? "submitting" : null}
+                  minHeight="44px"
+                  dataTestId="plan-action-btn"
+                />
+              </div>
             )}
           </article>
         )

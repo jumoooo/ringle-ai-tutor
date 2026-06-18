@@ -1,5 +1,8 @@
-import type { PropsWithChildren, ReactNode } from "react"
+import { useState, type PropsWithChildren, type ReactNode } from "react"
 import { NavLink } from "react-router-dom"
+import { useMembership } from "@/features/membership/hooks/useMembership"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile"
 import UserDropdown from "@/components/UserDropdown"
 
 interface LayoutProps extends PropsWithChildren {
@@ -48,6 +51,11 @@ const activeNavLinkStyle = {
   boxShadow: "var(--shadow-mode-tab)"
 } satisfies React.CSSProperties
 
+const navLinkHoverStyle = {
+  backgroundColor: "var(--color-surface)",
+  color: "var(--color-text-primary)"
+} satisfies React.CSSProperties
+
 function NavigationLink({
   to,
   label
@@ -55,12 +63,17 @@ function NavigationLink({
   to: string
   label: string
 }) {
+  const [isHovered, setIsHovered] = useState(false)
+
   return (
     <NavLink
       to={to}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={({ isActive }) => ({
         ...navLinkBaseStyle,
-        ...(isActive ? activeNavLinkStyle : null)
+        // 우선순위: isActive > isHovered > base
+        ...(isActive ? activeNavLinkStyle : isHovered ? navLinkHoverStyle : null)
       })}
     >
       {label}
@@ -74,6 +87,14 @@ export default function Layout({
   actions,
   children
 }: LayoutProps) {
+  const { userId } = useCurrentUser()
+  const { data: membership, isLoading: membershipLoading } = useMembership(userId)
+  const { data: profile } = useCurrentUserProfile(userId)
+  const canTalk =
+    !membershipLoading &&
+    membership?.status === "active" &&
+    membership?.plan.can_talk === true
+
   return (
     <div style={shellStyle}>
       <header style={headerStyle}>
@@ -118,9 +139,11 @@ export default function Layout({
             }}
           >
             <NavigationLink to="/" label="홈" />
-            <NavigationLink to="/chat" label="대화" />
+            {canTalk && <NavigationLink to="/chat" label="대화" />}
             <NavigationLink to="/learn" label="학습" />
-            <NavigationLink to="/admin" label="어드민" />
+            {profile?.role === "admin" && (
+              <NavigationLink to="/admin" label="어드민" />
+            )}
           </nav>
 
           <UserDropdown />
