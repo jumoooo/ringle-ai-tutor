@@ -1,13 +1,21 @@
 module Memberships
   class PurchaseService
-    def initialize(user:, plan:, card_token: "mock_token")
+    def initialize(user:, plan:, card_number:, expiry:, cvc:)
       @user = user
       @plan = plan
-      @card_token = card_token
+      @card_number = card_number
+      @expiry = expiry
+      @cvc = cvc
     end
 
     def call
-      payment = Payments::MockPaymentService.charge(user: @user, plan: @plan, card_token: @card_token)
+      payment = PaymentGateway.charge(
+        user: @user,
+        plan: @plan,
+        card_number: @card_number,
+        expiry: @expiry,
+        cvc: @cvc
+      )
       raise ActiveRecord::RecordInvalid.new(payment_log_record), "Payment failed" unless payment[:success]
 
       membership = upsert_membership

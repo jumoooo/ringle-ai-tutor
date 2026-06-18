@@ -3,15 +3,15 @@ import type { Membership, Plan } from "@/types/membership"
 interface PlanSelectorProps {
   plans: Plan[]
   currentMembership: Membership | null | undefined
-  onPurchase: (planId: number) => void
-  isPending: boolean
+  onSelectPlan: (plan: Plan) => void
+  isPending?: boolean
 }
 
 export default function PlanSelector({
   plans,
   currentMembership,
-  onPurchase,
-  isPending
+  onSelectPlan,
+  isPending = false
 }: PlanSelectorProps) {
   const paidPlans = plans
     .filter((plan) => plan.monthly_price > 0)
@@ -34,6 +34,7 @@ export default function PlanSelector({
             data-testid="plan-card"
             style={{
               display: "grid",
+              gridTemplateRows: "auto auto 1fr auto",
               gap: "var(--space-12)",
               padding: "var(--space-20)",
               borderRadius: "var(--radius-card)",
@@ -82,12 +83,15 @@ export default function PlanSelector({
               <button
                 type="button"
                 disabled
+                data-testid="plan-action-btn"
                 style={{
                   minHeight: "44px",
-                  border: "1px solid var(--color-border)",
+                  boxSizing: "border-box",
+                  border: "1px solid transparent",
                   borderRadius: "var(--radius-card)",
                   backgroundColor: "var(--color-disabled)",
-                  color: "var(--color-text-on-primary)"
+                  color: "var(--color-text-on-primary)",
+                  alignSelf: "end"
                 }}
               >
                 현재 플랜
@@ -95,15 +99,18 @@ export default function PlanSelector({
             ) : (
               <button
                 type="button"
-                onClick={() => onPurchase(plan.id)}
+                onClick={() => onSelectPlan(plan)}
                 disabled={isPending}
+                data-testid="plan-action-btn"
                 style={{
                   minHeight: "44px",
-                  border: "none",
+                  boxSizing: "border-box",
+                  border: "1px solid transparent",
                   borderRadius: "var(--radius-card)",
                   backgroundColor: "var(--color-primary)",
                   color: "var(--color-text-on-primary)",
-                  cursor: isPending ? "progress" : "pointer"
+                  cursor: isPending ? "progress" : "pointer",
+                  alignSelf: "end"
                 }}
               >
                 구매

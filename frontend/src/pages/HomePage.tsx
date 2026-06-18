@@ -1,8 +1,9 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
 import MembershipCard from "@/features/membership/components/MembershipCard"
+import PaymentModal from "@/features/membership/components/PaymentModal"
 import PlanSelector from "@/features/membership/components/PlanSelector"
 import {
   useMembership,
@@ -10,6 +11,7 @@ import {
   usePurchase
 } from "@/features/membership/hooks/useMembership"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
+import type { Plan } from "@/types/membership"
 
 function ActionButton({
   label,
@@ -63,6 +65,7 @@ export default function HomePage() {
   } = useMembership(userId)
   const { data: plans = [], isLoading: isPlansLoading } = usePlans()
   const purchase = usePurchase(userId)
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
 
   useEffect(() => {
     if (!membership?.expires_at) {
@@ -127,7 +130,6 @@ export default function HomePage() {
                 showToast("대화 기능은 프리미엄 플러스 멤버십이 필요해요.", "info")
                 return
               }
-
               void navigate("/chat")
             }}
             tone="primary"
@@ -141,7 +143,6 @@ export default function HomePage() {
                 showToast("학습 기능은 베이직 이상 멤버십이 필요해요.", "info")
                 return
               }
-
               void navigate("/learn")
             }}
             tone="secondary"
@@ -178,21 +179,34 @@ export default function HomePage() {
             <PlanSelector
               plans={plans}
               currentMembership={membership}
-              onPurchase={(planId) => {
-                purchase.mutate(planId, {
-                  onSuccess: () => {
-                    showToast("멤버십이 활성화되었어요.", "success")
-                  },
-                  onError: () => {
-                    showToast("구매에 실패했어요. 다시 시도해주세요.", "error")
-                  }
-                })
-              }}
+              onSelectPlan={(plan) => setSelectedPlan(plan)}
               isPending={purchase.isPending}
             />
           )}
         </section>
       </div>
+
+      <PaymentModal
+        open={selectedPlan !== null}
+        planName={selectedPlan?.name ?? ""}
+        onConfirm={(cardData) => {
+          if (selectedPlan === null) return
+          purchase.mutate(
+            { planId: selectedPlan.id, cardData },
+            {
+              onSuccess: () => {
+                setSelectedPlan(null)
+                showToast("멤버십이 활성화되었어요.", "success")
+              },
+              onError: () => {
+                showToast("구매에 실패했어요. 다시 시도해주세요.", "error")
+              }
+            }
+          )
+        }}
+        onClose={() => setSelectedPlan(null)}
+        isPending={purchase.isPending}
+      />
     </Layout>
   )
 }

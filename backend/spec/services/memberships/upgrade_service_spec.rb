@@ -5,6 +5,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
   let(:current_plan) { create(:plan, :basic) }
   let(:premium_plan) { create(:plan, :premium) }
   let(:transaction_id) { "txn_upgrade_spec" }
+  let(:card_params) { { card_number: "1234567890123456", expiry: "12/27", cvc: "123" } }
 
   around do |example|
     travel_to(Time.zone.parse("2026-06-18 20:00:00")) do
@@ -13,7 +14,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
   end
 
   before do
-    allow(Payments::MockPaymentService).to receive(:charge).and_return(
+    allow(PaymentGateway).to receive(:charge).and_return(
       { success: true, transaction_id: transaction_id }
     )
   end
@@ -28,7 +29,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
         expires_at: 20.days.from_now
       )
 
-      service = described_class.new(user: user, new_plan: premium_plan)
+      service = described_class.new(user: user, new_plan: premium_plan, **card_params)
 
       expect { @result = service.call }
         .to change(PaymentLog, :count).by(1)
@@ -56,7 +57,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
         expires_at: 1.day.ago
       )
 
-      service = described_class.new(user: user, new_plan: premium_plan)
+      service = described_class.new(user: user, new_plan: premium_plan, **card_params)
 
       expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
     end
@@ -69,13 +70,13 @@ RSpec.describe Memberships::UpgradeService, type: :service do
         status: "active",
         expires_at: 20.days.from_now
       )
-      service = described_class.new(user: user, new_plan: current_plan)
+      service = described_class.new(user: user, new_plan: current_plan, **card_params)
 
       expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
     end
 
     it "활성 멤버십이 없으면 예외를 발생시킨다" do
-      service = described_class.new(user: user, new_plan: premium_plan)
+      service = described_class.new(user: user, new_plan: premium_plan, **card_params)
 
       expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
     end
@@ -98,7 +99,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
         expires_at: 10.days.from_now
       )
 
-      service = described_class.new(user: user, new_plan: same_price_plan)
+      service = described_class.new(user: user, new_plan: same_price_plan, **card_params)
 
       expect { service.call }.not_to raise_error
 

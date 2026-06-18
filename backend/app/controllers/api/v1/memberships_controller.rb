@@ -15,7 +15,9 @@ module Api
         result = Memberships::PurchaseService.new(
           user: @current_user,
           plan: plan,
-          card_token: params[:card_token] || "mock_token"
+          card_number: params[:card_number].to_s,
+          expiry: params[:expiry].to_s,
+          cvc: params[:cvc].to_s
         ).call
 
         render json: {
@@ -31,7 +33,9 @@ module Api
         result = Memberships::UpgradeService.new(
           user: @current_user,
           new_plan: plan,
-          card_token: params[:card_token] || "mock_token"
+          card_number: params[:card_number].to_s,
+          expiry: params[:expiry].to_s,
+          cvc: params[:cvc].to_s
         ).call
 
         render json: {

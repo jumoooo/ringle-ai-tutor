@@ -2,6 +2,7 @@ import { z } from "zod"
 import { apiClient } from "@/api/client"
 import { API_ENDPOINTS } from "@/config/api"
 import { MembershipSchema, PlanSchema } from "@/types/membership"
+import type { CardData } from "@/types/payment"
 
 export async function fetchCurrentMembership() {
   const response = await apiClient.get(API_ENDPOINTS.membershipCurrent)
@@ -19,19 +20,35 @@ export async function fetchPlans() {
   return z.array(PlanSchema).parse(response.data.data)
 }
 
-export async function purchasePlan(planId: number) {
+export async function purchasePlan({
+  planId,
+  cardData
+}: {
+  planId: number
+  cardData: CardData
+}) {
   const response = await apiClient.post(API_ENDPOINTS.membershipPurchase, {
     plan_id: planId,
-    card_token: "mock_token"
+    card_number: cardData.card_number,
+    expiry: cardData.expiry,
+    cvc: cardData.cvc
   })
 
   return MembershipSchema.parse(response.data.data.membership)
 }
 
-export async function upgradePlan(planId: number) {
+export async function upgradePlan({
+  planId,
+  cardData
+}: {
+  planId: number
+  cardData: CardData
+}) {
   const response = await apiClient.post(API_ENDPOINTS.membershipUpgrade, {
     plan_id: planId,
-    card_token: "mock_token"
+    card_number: cardData.card_number,
+    expiry: cardData.expiry,
+    cvc: cardData.cvc
   })
 
   return MembershipSchema.parse(response.data.data.membership)

@@ -36,11 +36,9 @@ describe("PlanSelector", () => {
       <PlanSelector
         plans={plans}
         currentMembership={currentMembership}
-        onPurchase={() => {}}
-        isPending={false}
+        onSelectPlan={() => {}}
       />
     )
-
     expect(screen.getByText("현재 플랜")).toBeDisabled()
   })
 
@@ -49,30 +47,56 @@ describe("PlanSelector", () => {
       <PlanSelector
         plans={plans}
         currentMembership={currentMembership}
-        onPurchase={() => {}}
-        isPending={false}
+        onSelectPlan={() => {}}
       />
     )
-
     expect(screen.getByRole("button", { name: "구매" })).toBeInTheDocument()
   })
 
-  it("멤버십이 없으면 모든 플랜에 구매 버튼이 표시돼요", () => {
-    const onPurchase = vi.fn()
-
+  it("구매 버튼 클릭 시 onSelectPlan이 해당 plan 객체와 함께 호출돼요", () => {
+    const onSelectPlan = vi.fn()
     render(
       <PlanSelector
         plans={plans}
         currentMembership={null}
-        onPurchase={onPurchase}
-        isPending={false}
+        onSelectPlan={onSelectPlan}
       />
     )
 
     const buttons = screen.getAllByRole("button", { name: "구매" })
-    expect(buttons).toHaveLength(2)
     fireEvent.click(buttons[0])
-    expect(onPurchase).toHaveBeenCalledWith(4)
+
+    expect(onSelectPlan).toHaveBeenCalledTimes(1)
+    expect(onSelectPlan).toHaveBeenCalledWith(expect.objectContaining({ id: expect.any(Number) }))
+  })
+
+  it("isPending=true이면 구매 버튼이 disabled돼요", () => {
+    render(
+      <PlanSelector
+        plans={plans}
+        currentMembership={null}
+        onSelectPlan={() => {}}
+        isPending={true}
+      />
+    )
+
+    const buttons = screen.getAllByRole("button", { name: "구매" })
+    buttons.forEach((btn) => expect(btn).toBeDisabled())
+  })
+
+  it("모든 플랜 액션 버튼이 동일한 data-testid를 가져요", () => {
+    render(
+      <PlanSelector
+        plans={plans}
+        currentMembership={currentMembership}
+        onSelectPlan={() => {}}
+      />
+    )
+
+    const actionBtns = screen.getAllByTestId("plan-action-btn")
+    expect(actionBtns.length).toBe(2)
+    const heights = actionBtns.map((btn) => (btn as HTMLButtonElement).style.minHeight)
+    expect(new Set(heights).size).toBe(1)
   })
 
   it("프리미엄 플러스가 베이직보다 먼저 렌더돼요", () => {
@@ -80,8 +104,7 @@ describe("PlanSelector", () => {
       <PlanSelector
         plans={plans}
         currentMembership={null}
-        onPurchase={() => {}}
-        isPending={false}
+        onSelectPlan={() => {}}
       />
     )
 

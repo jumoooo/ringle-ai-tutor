@@ -1,6 +1,6 @@
 module Payments
   class MockPaymentService
-    def self.charge(user:, plan:, card_token: "mock_token")
+    def self.charge(user:, plan:, card_number:, expiry:, cvc:)
       { success: true, transaction_id: SecureRandom.uuid }
     end
 

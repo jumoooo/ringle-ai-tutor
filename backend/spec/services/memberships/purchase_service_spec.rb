@@ -4,6 +4,7 @@ RSpec.describe Memberships::PurchaseService, type: :service do
   let(:user) { create(:user) }
   let(:plan) { create(:plan, :premium) }
   let(:transaction_id) { "txn_purchase_spec" }
+  let(:card_params) { { card_number: "1234567890123456", expiry: "12/27", cvc: "123" } }
 
   around do |example|
     travel_to(Time.zone.parse("2026-06-18 15:00:00")) do
@@ -13,13 +14,13 @@ RSpec.describe Memberships::PurchaseService, type: :service do
 
   describe "#call" do
     before do
-      allow(Payments::MockPaymentService).to receive(:charge).and_return(
+      allow(PaymentGateway).to receive(:charge).and_return(
         { success: true, transaction_id: transaction_id }
       )
     end
 
     it "신규 구매 시 active 멤버십과 결제 로그를 생성한다" do
-      service = described_class.new(user: user, plan: plan)
+      service = described_class.new(user: user, plan: plan, **card_params)
 
       expect { @result = service.call }
         .to change(Membership, :count).by(1)
@@ -36,6 +37,18 @@ RSpec.describe Memberships::PurchaseService, type: :service do
       end
     end
 
+    it "카드 정보를 PaymentGateway에 전달한다" do
+      described_class.new(user: user, plan: plan, **card_params).call
+
+      expect(PaymentGateway).to have_received(:charge).with(
+        user: user,
+        plan: plan,
+        card_number: "1234567890123456",
+        expiry: "12/27",
+        cvc: "123"
+      )
+    end
+
     it "기존 active 멤버십이 다른 플랜이면 만료시키고 새 멤버십을 생성한다" do
       previous_plan = create(:plan, :basic)
       previous_membership = create(
@@ -47,7 +60,7 @@ RSpec.describe Memberships::PurchaseService, type: :service do
         expires_at: 25.days.from_now
       )
 
-      service = described_class.new(user: user, plan: plan)
+      service = described_class.new(user: user, plan: plan, **card_params)
 
       expect { @result = service.call }
         .to change(Membership, :count).by(1)

@@ -1,9 +1,11 @@
 module Memberships
   class UpgradeService
-    def initialize(user:, new_plan:, card_token: "mock_token")
+    def initialize(user:, new_plan:, card_number:, expiry:, cvc:)
       @user = user
       @new_plan = new_plan
-      @card_token = card_token
+      @card_number = card_number
+      @expiry = expiry
+      @cvc = cvc
     end
 
     def call
@@ -11,7 +13,13 @@ module Memberships
       raise ActiveRecord::RecordInvalid.new(membership_record), "No active membership to upgrade" unless current_membership&.active?
       raise ActiveRecord::RecordInvalid.new(membership_record), "Cannot downgrade via this endpoint" if @new_plan.monthly_price < current_membership.plan.monthly_price
 
-      payment = Payments::MockPaymentService.charge(user: @user, plan: @new_plan, card_token: @card_token)
+      payment = PaymentGateway.charge(
+        user: @user,
+        plan: @new_plan,
+        card_number: @card_number,
+        expiry: @expiry,
+        cvc: @cvc
+      )
       raise ActiveRecord::RecordInvalid.new(payment_log_record), "Payment failed" unless payment[:success]
 
       base_time = [current_membership.expires_at, Time.current].max
