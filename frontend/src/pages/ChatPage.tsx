@@ -182,6 +182,7 @@ export default function ChatPage() {
   }, [navigate, showToast, userId])
 
   useEffect(() => {
+    if (userId === null) return
     if (isMembershipLoading) return
 
     if (!membership || membership.status !== "active" || !membership.plan.can_talk) {
@@ -191,7 +192,7 @@ export default function ChatPage() {
       )
       void navigate("/")
     }
-  }, [isMembershipLoading, membership, navigate, showToast])
+  }, [isMembershipLoading, membership, navigate, showToast, userId])
 
   useEffect(() => {
     if (!membership?.expires_at) {
@@ -264,6 +265,21 @@ export default function ChatPage() {
     setIsInputDisabled(false)
     void initializeConversation()
   }, [initializeConversation])
+
+  if (userId === null || isMembershipLoading) {
+    return (
+      <Layout title="AI 튜터 대화" description="">
+        <div
+          style={{
+            padding: "var(--space-20)",
+            color: "var(--color-text-secondary)"
+          }}
+        >
+          불러오는 중...
+        </div>
+      </Layout>
+    )
+  }
 
   return (
     <Layout
@@ -368,14 +384,18 @@ export default function ChatPage() {
             setChatState("recording")
           }}
           onSubmit={() => {
-            void vad.submit().then((submitted) => {
+            const handleSubmit = async () => {
+              await vad.stop()
+              setChatState("processing")
+
+              const submitted = await vad.submit()
               if (!submitted) {
                 showToast("먼저 한 문장 이상 말해주세요.", "info")
-                return
+                setChatState("idle")
               }
-              void vad.stop()
-              setChatState("processing")
-            })
+            }
+
+            void handleSubmit()
           }}
         />
       </div>

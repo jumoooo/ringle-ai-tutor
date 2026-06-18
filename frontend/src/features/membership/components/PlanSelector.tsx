@@ -27,6 +27,15 @@ export default function PlanSelector({
     >
       {paidPlans.map((plan) => {
         const isCurrentPlan = currentMembership?.plan.id === plan.id
+        const isDowngrade =
+          currentMembership != null &&
+          currentMembership.status === "active" &&
+          plan.monthly_price < currentMembership.plan.monthly_price
+        const isLateralChange =
+          currentMembership != null &&
+          currentMembership.status === "active" &&
+          plan.monthly_price === currentMembership.plan.monthly_price &&
+          plan.id !== currentMembership.plan.id
         const isUpgrade =
           currentMembership !== null &&
           currentMembership !== undefined &&
@@ -85,6 +94,36 @@ export default function PlanSelector({
                 }}
               >
                 현재 플랜
+              </button>
+            ) : isDowngrade ? (
+              <button
+                type="button"
+                disabled
+                style={{
+                  minHeight: "44px",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-card)",
+                  backgroundColor: "var(--color-disabled)",
+                  color: "var(--color-text-on-primary)"
+                }}
+              >
+                다운그레이드 불가
+              </button>
+            ) : isLateralChange ? (
+              <button
+                type="button"
+                onClick={() => onUpgrade(plan.id)}
+                disabled={isPending}
+                style={{
+                  minHeight: "44px",
+                  border: "none",
+                  borderRadius: "var(--radius-card)",
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-text-on-primary)",
+                  cursor: isPending ? "progress" : "pointer"
+                }}
+              >
+                플랜 변경
               </button>
             ) : isUpgrade ? (
               <button

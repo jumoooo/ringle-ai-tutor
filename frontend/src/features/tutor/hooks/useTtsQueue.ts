@@ -5,18 +5,25 @@ import { playAudioBlob } from "@/utils/audio"
 export function useTtsQueue(onError: (message: string) => void) {
   const queueRef = useRef<string[]>([])
   const isPlayingRef = useRef(false)
+  const generationRef = useRef(0)
   // text → Blob 캐시: 이미 받아온 TTS blob을 보관해 재생 버튼 클릭 시 API 재호출 없이 즉시 재생
   const blobCacheRef = useRef(new Map<string, Blob>())
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const flush = useCallback(() => {
+    generationRef.current += 1
     queueRef.current = []
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
     isPlayingRef.current = false
   }, [])
 
-  const playNext = useCallback(async () => {
+  const playNext = useCallback(async (generation: number) => {
+    if (generation !== generationRef.current) {
+      isPlayingRef.current = false
+      return
+    }
+
     if (queueRef.current.length === 0) {
       isPlayingRef.current = false
       return
@@ -45,15 +52,31 @@ export function useTtsQueue(onError: (message: string) => void) {
           return
         }
 
+        if (generation !== generationRef.current) {
+          isPlayingRef.current = false
+          return
+        }
+
         blobCacheRef.current.set(nextSentence, audioBlob)
       }
 
       await playAudioBlob(audioBlob, controller.signal)
-    } catch {
+    } catch (error) {
       if (controller.signal.aborted) {
         isPlayingRef.current = false
         return
       }
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code: unknown }).code === "ERR_CANCELED"
+      ) {
+        isPlayingRef.current = false
+        return
+      }
+
       queueRef.current = []
       isPlayingRef.current = false
       onError("음성 재생에 실패했습니다.")
@@ -65,8 +88,13 @@ export function useTtsQueue(onError: (message: string) => void) {
       return
     }
 
+    if (generation !== generationRef.current) {
+      isPlayingRef.current = false
+      return
+    }
+
     abortControllerRef.current = null
-    await playNext()
+    await playNext(generation)
   }, [onError])
 
   const enqueue = useCallback(
@@ -74,7 +102,7 @@ export function useTtsQueue(onError: (message: string) => void) {
       queueRef.current.push(text)
 
       if (!isPlayingRef.current) {
-        void playNext()
+        void playNext(generationRef.current)
       }
     },
     [playNext]
@@ -86,12 +114,13 @@ export function useTtsQueue(onError: (message: string) => void) {
     (sentences: string[]) => {
       if (sentences.length === 0) return
 
+      generationRef.current += 1
       abortControllerRef.current?.abort()
       abortControllerRef.current = null
       queueRef.current = [...sentences]
       isPlayingRef.current = false
 
-      void playNext()
+      void playNext(generationRef.current)
     },
     [playNext]
   )
