@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast"
 import MembershipCard from "@/features/membership/components/MembershipCard"
 import PaymentModal from "@/features/membership/components/PaymentModal"
 import PlanSelector from "@/features/membership/components/PlanSelector"
+import UpgradePromptModal from "@/features/membership/components/UpgradePromptModal"
 import {
   useMembership,
   usePlans,
@@ -65,6 +66,7 @@ export default function HomePage() {
   } = useMembership(userId)
   const { data: plans = [], isLoading: isPlansLoading } = usePlans()
   const purchase = usePurchase(userId)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function HomePage() {
             disabled={false}
             onClick={() => {
               if (!canTalk) {
-                showToast("대화 기능은 프리미엄 플러스 멤버십이 필요해요.", "info")
+                setShowUpgradeModal(true)
                 return
               }
               void navigate("/chat")
@@ -148,6 +150,12 @@ export default function HomePage() {
             tone="secondary"
           />
         </section>
+
+        <UpgradePromptModal
+          open={showUpgradeModal}
+          requiredPlanName="프리미엄 플러스"
+          onClose={() => setShowUpgradeModal(false)}
+        />
 
         <section style={{ display: "grid", gap: "var(--space-16)" }}>
           <div>

@@ -98,6 +98,16 @@ describe("HomePage", () => {
     mockShowToast.mockReset()
   })
 
+  it("멤버십 없이 '대화 시작' 클릭 시 UpgradePromptModal이 열려요", () => {
+    setupMocks({ membership: null })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    fireEvent.click(screen.getByRole("button", { name: "대화 시작" }))
+
+    expect(screen.getByText("멤버십이 필요해요")).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
   it("활성 can_talk 멤버십이 있으면 '대화 시작' 클릭 시 /chat으로 이동해요", () => {
     setupMocks({ membership: activeMembership })
     render(<HomePage />, { wrapper: makeWrapper() })
@@ -105,6 +115,16 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "대화 시작" }))
 
     expect(navigate).toHaveBeenCalledWith("/chat")
+  })
+
+  it("UpgradePromptModal '닫기' 클릭 시 모달이 닫혀요", () => {
+    setupMocks({ membership: null })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    fireEvent.click(screen.getByRole("button", { name: "대화 시작" }))
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }))
+
+    expect(screen.queryByText("멤버십이 필요해요")).not.toBeInTheDocument()
   })
 
   // ── 구매 플로우 ─────────────────────────────────────────
