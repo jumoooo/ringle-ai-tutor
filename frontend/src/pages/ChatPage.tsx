@@ -29,7 +29,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const { showToast } = useToast()
   const { userId } = useCurrentUser()
-  const { data: membership } = useMembership(userId)
+  const { data: membership, isLoading: isMembershipLoading } = useMembership(userId)
   const { stream: startChatStream } = useChatStream()
   const [chatState, setChatState] = useState<ChatState>("idle")
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -182,18 +182,16 @@ export default function ChatPage() {
   }, [navigate, showToast, userId])
 
   useEffect(() => {
-    if (!membership) {
-      return
-    }
+    if (isMembershipLoading) return
 
-    if (membership.status !== "active" || !membership.plan.can_talk) {
+    if (!membership || membership.status !== "active" || !membership.plan.can_talk) {
       showToast(
         "대화 기능을 이용하려면 Standard 이상 멤버십이 필요합니다.",
         "error"
       )
       void navigate("/")
     }
-  }, [membership, navigate, showToast])
+  }, [isMembershipLoading, membership, navigate, showToast])
 
   useEffect(() => {
     if (!membership?.expires_at) {
