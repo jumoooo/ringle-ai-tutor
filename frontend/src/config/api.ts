@@ -4,6 +4,7 @@ export const BASE_URL =
 export const API_ENDPOINTS = {
   health: `${BASE_URL}/api/v1/health`,
   users: `${BASE_URL}/api/v1/users`,
+  usersMe: `${BASE_URL}/api/v1/users/me`,
   plans: `${BASE_URL}/api/v1/plans`,
   membershipCurrent: `${BASE_URL}/api/v1/memberships/current`,
   membershipPurchase: `${BASE_URL}/api/v1/memberships/purchase`,

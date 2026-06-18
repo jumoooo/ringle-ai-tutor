@@ -2,14 +2,18 @@ import { useEffect } from "react"
 
 interface UpgradePromptModalProps {
   open: boolean
+  featureName: string
   requiredPlanName: string
   onClose: () => void
+  onGoPlans?: () => void
 }
 
 export default function UpgradePromptModal({
   open,
+  featureName,
   requiredPlanName,
-  onClose
+  onClose,
+  onGoPlans
 }: UpgradePromptModalProps) {
   useEffect(() => {
     if (!open) return
@@ -73,7 +77,11 @@ export default function UpgradePromptModal({
               lineHeight: "var(--line-height-base)"
             }}
           >
-            대화 기능은 <strong style={{ color: "var(--color-text-primary)" }}>{requiredPlanName}</strong> 멤버십이 필요해요.
+            {featureName} 기능은{" "}
+            <strong style={{ color: "var(--color-text-primary)" }}>
+              {requiredPlanName}
+            </strong>{" "}
+            이상 멤버십이 필요해요.
           </p>
           <p
             style={{
@@ -82,20 +90,42 @@ export default function UpgradePromptModal({
               color: "var(--color-text-secondary)"
             }}
           >
-            아래 플랜 구매 섹션에서 구매하실 수 있어요.
+            플랜 구매 페이지에서 구매하실 수 있어요.
           </p>
         </div>
 
         <div style={{ display: "grid", gap: "var(--space-8)" }}>
+          {onGoPlans ? (
+            <button
+              type="button"
+              onClick={() => {
+                onGoPlans()
+                onClose()
+              }}
+              style={{
+                minHeight: "48px",
+                border: "none",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "var(--color-primary)",
+                color: "var(--color-text-on-primary)",
+                fontSize: "var(--font-size-base)",
+                fontWeight: "var(--font-weight-semibold)",
+                cursor: "pointer"
+              }}
+            >
+              플랜 구매하기
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={onClose}
             style={{
               minHeight: "48px",
-              border: "none",
+              border: "1px solid var(--color-border)",
               borderRadius: "var(--radius-card)",
-              backgroundColor: "var(--color-primary)",
-              color: "var(--color-text-on-primary)",
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-text-primary)",
               fontSize: "var(--font-size-base)",
               fontWeight: "var(--font-weight-semibold)",
               cursor: "pointer"

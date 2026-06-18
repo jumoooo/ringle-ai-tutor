@@ -94,6 +94,10 @@ export default function Layout({
     !membershipLoading &&
     membership?.status === "active" &&
     membership?.plan.can_talk === true
+  const canLearn =
+    !membershipLoading &&
+    (membership?.status === "active" || membership?.status === "trial") &&
+    membership?.plan.can_learn === true
 
   return (
     <div style={shellStyle}>
@@ -140,10 +144,11 @@ export default function Layout({
           >
             <NavigationLink to="/" label="홈" />
             {canTalk && <NavigationLink to="/chat" label="대화" />}
-            <NavigationLink to="/learn" label="학습" />
+            {canLearn && <NavigationLink to="/learn" label="학습" />}
             {profile?.role === "admin" && (
-              <NavigationLink to="/admin" label="어드민" />
+              <NavigationLink to="/admin" label="관리자" />
             )}
+            <NavigationLink to="/plans" label="구매" />
           </nav>
 
           <UserDropdown />

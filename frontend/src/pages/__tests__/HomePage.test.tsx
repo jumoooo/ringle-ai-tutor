@@ -1,17 +1,19 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter } from "react-router-dom"
 import HomePage from "@/pages/HomePage"
-import type { Membership, Plan } from "@/types/membership"
+import type { Membership } from "@/types/membership"
 
 vi.mock("@/hooks/useCurrentUser", () => ({
-  useCurrentUser: () => ({ userId: 1 })
+  useCurrentUser: () => ({
+    userId: 1,
+    selectUser: vi.fn(),
+    clearUser: vi.fn()
+  })
 }))
 
 vi.mock("@/features/membership/hooks/useMembership", () => ({
-  useMembership: vi.fn(),
-  usePlans: vi.fn(),
-  usePurchase: vi.fn()
+  useMembership: vi.fn()
 }))
 
 const mockShowToast = vi.fn()
@@ -27,13 +29,14 @@ vi.mock("react-router-dom", async (importOriginal) => {
 })
 
 import {
-  useMembership,
-  usePlans,
-  usePurchase
+  useMembership
 } from "@/features/membership/hooks/useMembership"
 
-const plans: Plan[] = [
-  {
+const activeMembership: Membership = {
+  id: 1,
+  status: "active",
+  expires_at: "2099-01-01T00:00:00+09:00",
+  plan: {
     id: 4,
     name: "프리미엄 플러스",
     monthly_price: 39900,
@@ -42,13 +45,6 @@ const plans: Plan[] = [
     can_analyze: true,
     duration_days: 60
   }
-]
-
-const activeMembership: Membership = {
-  id: 1,
-  status: "active",
-  expires_at: "2099-01-01T00:00:00+09:00",
-  plan: plans[0]
 }
 
 function makeWrapper() {
@@ -65,14 +61,10 @@ function makeWrapper() {
 function setupMocks({
   membership = null,
   isLoading = false,
-  planList = plans,
-  mutate = vi.fn(),
   refetch = vi.fn()
 }: {
   membership?: Membership | null
   isLoading?: boolean
-  planList?: Plan[]
-  mutate?: ReturnType<typeof vi.fn>
   refetch?: ReturnType<typeof vi.fn>
 } = {}) {
   vi.mocked(useMembership).mockReturnValue({
@@ -80,16 +72,6 @@ function setupMocks({
     isLoading,
     refetch
   } as unknown as ReturnType<typeof useMembership>)
-
-  vi.mocked(usePlans).mockReturnValue({
-    data: planList,
-    isLoading: false
-  } as unknown as ReturnType<typeof usePlans>)
-
-  vi.mocked(usePurchase).mockReturnValue({
-    mutate,
-    isPending: false
-  } as unknown as ReturnType<typeof usePurchase>)
 }
 
 describe("HomePage", () => {
@@ -127,6 +109,20 @@ describe("HomePage", () => {
     })
   })
 
+  it("로딩 중이면 대화 시작 버튼이 disabled돼요", () => {
+    setupMocks({ membership: null, isLoading: true })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    expect(screen.getByRole("button", { name: "대화 시작" })).toBeDisabled()
+  })
+
+  it("로딩 중이면 학습 시작 버튼이 disabled돼요", () => {
+    setupMocks({ membership: null, isLoading: true })
+    render(<HomePage />, { wrapper: makeWrapper() })
+
+    expect(screen.getByRole("button", { name: "학습 시작" })).toBeDisabled()
+  })
+
   it("UpgradePromptModal '닫기' 클릭 시 모달이 닫혀요", () => {
     setupMocks({ membership: null })
     render(<HomePage />, { wrapper: makeWrapper() })
@@ -137,53 +133,29 @@ describe("HomePage", () => {
     expect(screen.queryByText("멤버십이 필요해요")).not.toBeInTheDocument()
   })
 
-  // ── 구매 플로우 ─────────────────────────────────────────
-  it("플랜 '구매' 클릭 시 PaymentModal이 열려요", () => {
+  it("멤버십 없이 학습 시작 클릭 시 학습 업그레이드 모달이 열려요", () => {
     setupMocks({ membership: null })
     render(<HomePage />, { wrapper: makeWrapper() })
 
-    fireEvent.click(screen.getByRole("button", { name: "구매" }))
+    fireEvent.click(screen.getByRole("button", { name: "학습 시작" }))
 
-    expect(screen.getByText("결제 정보 입력")).toBeInTheDocument()
+    expect(
+      screen.getByText((_, element) =>
+        element?.textContent === "학습 기능은 베이직 이상 멤버십이 필요해요."
+      )
+    ).toBeInTheDocument()
   })
 
-  it("PaymentModal '취소' 클릭 시 모달이 닫혀요", () => {
+  it("학습 업그레이드 모달에서 플랜 구매하기 클릭 시 /plans로 이동해요", () => {
     setupMocks({ membership: null })
     render(<HomePage />, { wrapper: makeWrapper() })
 
-    fireEvent.click(screen.getByRole("button", { name: "구매" }))
-    fireEvent.click(screen.getByRole("button", { name: "취소" }))
+    fireEvent.click(screen.getByRole("button", { name: "학습 시작" }))
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "플랜 구매하기" })
+    )
 
-    expect(screen.queryByText("결제 정보 입력")).not.toBeInTheDocument()
-  })
-
-  it("결제 완료 클릭 시 mutate가 planId와 cardData를 받아요", () => {
-    const mutate = vi.fn()
-    setupMocks({ membership: null, mutate })
-    render(<HomePage />, { wrapper: makeWrapper() })
-
-    fireEvent.click(screen.getByRole("button", { name: "구매" }))
-    fireEvent.click(screen.getByRole("button", { name: "결제 완료" }))
-
-    expect(mutate).toHaveBeenCalledTimes(1)
-    expect(mutate.mock.calls[0][0]).toMatchObject({
-      planId: 4,
-      cardData: expect.objectContaining({ card_number: expect.any(String) })
-    })
-  })
-
-  it("onSuccess 콜백 호출 시 PaymentModal이 닫혀요", () => {
-    const mutate = vi.fn()
-    setupMocks({ membership: null, mutate })
-    render(<HomePage />, { wrapper: makeWrapper() })
-
-    fireEvent.click(screen.getByRole("button", { name: "구매" }))
-    fireEvent.click(screen.getByRole("button", { name: "결제 완료" }))
-
-    const onSuccess = mutate.mock.calls[0][1]?.onSuccess as () => void
-    act(() => { onSuccess() })
-
-    expect(screen.queryByText("결제 정보 입력")).not.toBeInTheDocument()
+    expect(navigate).toHaveBeenCalledWith("/plans")
   })
 
   it("만료까지 32비트 한계(24.8일)를 초과하면 만료 토스트를 표시하지 않아요", () => {

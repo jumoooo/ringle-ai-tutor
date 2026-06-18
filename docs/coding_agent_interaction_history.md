@@ -468,3 +468,665 @@ Phase 5 버그 수정 완료 후 사용자 수동 테스트 중 발견한 UX 문
 - 수정 파일: `HomePage.tsx`, `PlanSelector.tsx`, `AdminPage.tsx`, `UserMembershipTable.tsx`, `Toast.tsx` (5개)
 - `pnpm typecheck` 0 errors 확인
 - 수정 항목 8/8 완료
+
+---
+
+## Phase 7 — 네트워크 복원력 보강 및 서비스 레이어 검증 테스트 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_network-resilience-validation-tests`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_network-resilience-validation-tests/work-order.md`
+
+### 작업 배경 및 목표
+
+Phase 1~6에서 AI 파이프라인·멤버십·프론트엔드 기능 구현이 완료됐지만, 네트워크 오류 처리와 서비스 레이어 테스트가 미비했다.  
+사용자 입력이 2000자를 초과하거나 axios 요청이 무한 대기할 때의 방어 로직이 없었고,  
+`PurchaseService`·`ChatStreamService` 등 핵심 서비스에 단위 테스트가 존재하지 않았다.  
+이 Phase에서는 422 입력 검증, axios timeout 설정, 서비스 spec 2개 신규 작성, chat request spec context 분리를 수행한다.
+
+### 주요 프롬프트 예시
+
+> "네트워크 오류도 최대한 보완했으면 좋겠어 깊게 생각후 계획 한번 세워봐"
+
+> "현업에서 2026-06 기준 사용하는거 웹에서 한번 모범사례 찾아봄다음 추가 및 보완할거 한번 찾아서 중립 잘 지켜서 깊게 생각후 다시정리해줘"
+
+> "누락 없이 상세하게 /cm_run"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| SSE connection timeout 제거 | timeout 미추가 | `Message.create!`가 AI 호출 전에 실행되므로, SSE 재시도 시 중복 메시지 생성 위험. 정상 요청도 첫 바이트 전에 timeout 오탐 가능 |
+| axios timeout 30s → 15s | `15_000`ms | 2026-06 현업 기준 일반 REST API는 10~15s가 표준. 30s는 대용량 보고서 생성 등 heavy operation용. chat은 fetch 기반이므로 미적용 |
+| idempotency key 미구현 | 과제 범위 제외 | 기존 `useChatStream.ts` 3회 재시도와 `Message.create!` 중복 위험이 공존하지만, idempotency key 구현은 과제 범위를 초과함. "인지된 한계"로 명시 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_network-resilience-validation-tests](2026-06-18_network-resilience-validation-tests/2026-06-18_network-resilience-validation-tests_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_network-resilience-validation-tests](2026-06-18_network-resilience-validation-tests/2026-06-18_network-resilience-validation-tests_done.png)
+
+### 최종 결과 요약
+
+| 항목 | 결과 |
+|---|---|
+| `validate_message_length!` before_action + 422 JSON | ✅ |
+| `apiClient.defaults.timeout = 15_000` | ✅ |
+| `spec/services/memberships/purchase_service_spec.rb` 신규 (2 examples) | ✅ |
+| `spec/services/ai/chat_stream_service_spec.rb` 신규 (2 examples) | ✅ |
+| `chat_streams_spec.rb` context 3종 분리 + 입력 검증 422 케이스 | ✅ |
+| `bundle exec rspec` 45 examples, 0 failures | ✅ |
+| `pnpm typecheck` 0 errors | ✅ |
+| 커밋: `451e81b feat(backend): 입력 길이 422 검증 + axios timeout + 서비스 레이어 spec 추가` | ✅ |
+
+---
+
+## Phase 8 — ChatPage 멤버십 접근 가드 수정 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_chatpage-membership-guard`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_chatpage-membership-guard/work-order.md`
+
+### 작업 배경 및 목표
+
+과제 원문에 "유저가 대화 화면에 접속하기 전에 멤버십의 존재 여부를 판단합니다."라고 명시되어 있으나, 기존 `ChatPage.tsx`는 `useMembership` 로딩 중(`membership === undefined`)일 때 체크를 건너뛰어 대화 화면이 일시적으로 렌더링되는 문제가 있었다.  
+`isMembershipLoading` 상태를 활용해 로딩 중에는 판단을 유예하고, 로딩 완료 후 멤버십이 없거나 권한이 없으면 홈으로 redirect하도록 수정한다.
+
+### 주요 프롬프트 예시
+
+> "과제 원문 기준 최종 대조 결과 — ChatPage 진입 전 로딩 가드 없음이 미흡 항목으로 확인됨. 1 하고 /cm_run 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| `isMembershipLoading` 조건 추가 | useEffect 첫 줄 guard | 로딩 중과 데이터 없음을 구분해야 과제 요건(접속 전 판단) 충족 가능 |
+| `!membership OR status 불일치` OR 조합 | 단일 if 조건 | 별도 if 블록 없이 중복 navigate 없이 간결하게 처리 가능 |
+| 로딩 스피너 UI 추가 안 함 | 기존 Layout 유지 | 변경 최소화 원칙 — redirect 타이밍 수정만으로 과제 요건 충족 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_chatpage-membership-guard](2026-06-18_chatpage-membership-guard/2026-06-18_chatpage-membership-guard_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_chatpage-membership-guard](2026-06-18_chatpage-membership-guard/2026-06-18_chatpage-membership-guard_done.png)
+
+### 최종 결과 요약
+
+| 항목 | 결과 |
+|---|---|
+| `isMembershipLoading === true` 동안 membership 체크 유예 | ✅ |
+| 로딩 완료 + `membership === undefined` → 홈 redirect | ✅ |
+| 로딩 완료 + `status !== active` / `can_talk` 없음 → 홈 redirect | ✅ |
+| `pnpm typecheck` 0 errors | ✅ |
+| 기존 userId 가드 / expires_at setTimeout 동작 유지 | ✅ |
+| 커밋: `385c036 fix(frontend): ChatPage 멤버십 로딩 가드 추가` | ✅ |
+
+---
+
+## Phase 9 — 테스트 커버리지 보강 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_test-coverage-boost`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_test-coverage-boost/work-order.md`
+
+### 작업 배경 및 목표
+
+과제 필수 요건 "퀄리티 있는 테스트 코드 반드시 작성"에 맞춰 누락된 2개 영역을 보완한다.  
+Codex 리뷰를 통해 (1) 만료 멤버십 request 레벨 검증 누락, (2) UpgradeService 서비스 spec 미작성이 확인됐다.  
+`base_time = [expires_at, Time.current].max` 분기 로직과 same-price 허용 동작을 테스트로 문서화한다.
+
+### 주요 프롬프트 예시
+
+> "테스트 코드 부족한거 없니? 깊게 생각하고 실제 내용 확인해줘"
+
+> "한번 codex 한테 질의 해보자 /codex-assist-plan 처럼"
+
+> "깊게 생각후 누락없이 /cm_run 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| `travel_to` 미사용 | `expires_at: 1.minute.ago` 직접 fixture | 시간 흐름 시뮬레이션 불필요. 단순 과거값으로 충분하고 복잡성 제거 |
+| same-price 케이스 추가 | 성공으로 고정 (소스 수정 없음) | 정책 수정은 scope 초과. 현재 허용 동작을 테스트로 문서화하는 것이 목적 |
+| `new_plan:` 시그니처 | Codex 지적 채택 | `UpgradeService.initialize`의 실제 파라미터명이 `new_plan:`. `plan:`으로 쓰면 런타임 오류 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_test-coverage-boost](2026-06-18_test-coverage-boost/2026-06-18_test-coverage-boost_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_test-coverage-boost](2026-06-18_test-coverage-boost/2026-06-18_test-coverage-boost_done.png)
+
+### 최종 결과 요약
+
+- `backend/spec/requests/api/v1/stt_spec.rb` — 만료 멤버십 403 케이스 추가 ✅
+- `backend/spec/requests/api/v1/tts_spec.rb` — 만료 멤버십 403 케이스 추가 ✅
+- `backend/spec/requests/api/v1/chat_streams_spec.rb` — 만료 멤버십 403 케이스 추가 ✅
+- `backend/spec/services/memberships/upgrade_service_spec.rb` — 신규 5 examples (Case 2는 핸드오프 오류 수정: expires_at 과거 → RecordInvalid로 변경) ✅
+- `bundle exec rspec` 전체 53 examples, 0 failures ✅
+- 커밋: `2127ca0 test(backend): 만료 멤버십 403 케이스 + UpgradeService spec 추가`
+
+---
+
+## Phase 10 — 프론트엔드 버그 7개 수정 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_frontend-bugfix`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_frontend-bugfix/work-order.md`
+
+### 작업 배경 및 목표
+
+수동 통합 테스트 중 발견된 프론트엔드 버그 7개를 수정한다.  
+다운그레이드 방지 미작동, TTS 재생 밀림, ChatPage 중복 토스트/플리커/즉시 종료 미작동이 주요 대상이다.  
+두 번의 Codex 리뷰를 거쳐 generation counter, 분기 우선순위, stop() 순서 변경을 최종 확정했다.
+
+### 주요 프롬프트 예시
+
+> "전체적으로 개선 했으면 좋겠어 한번에 처리해줘 깊게 생각하고 각각마다 깊게 생각하고 탐색해보면서 해결책 생각해보고 상세하게 계획 세워봐"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| generation counter 패턴 | flush + replayAll 둘 다 generation 증가, playNext에서 abort/generation 분리 체크 | Codex 1차 리뷰: replayAll도 race 동일 적용. 2차 리뷰: abort와 generation을 다른 종료 이유로 코드에서 분리해야 디버깅 가능 |
+| PlanSelector 분기 우선순위 명시 | isCurrentPlan → isDowngrade → isLateralChange → isUpgrade → 구매 | Codex 1차 리뷰: isLateralChange를 isUpgrade 뒤에 두면 same-price가 구매로 빠질 수 있음. 명시적 순서로 실수 방지 |
+| B-7 onSubmit 순서 | vad.stop() 먼저 → setChatState("processing") → vad.submit() | Codex 1차 리뷰 B안 채택. idle → processing 깜빡임 방지. 미제출 시만 idle 복귀 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_frontend-bugfix](2026-06-18_frontend-bugfix/2026-06-18_frontend-bugfix_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_frontend-bugfix](2026-06-18_frontend-bugfix/2026-06-18_frontend-bugfix_done.png)
+
+### 최종 결과 요약
+
+- `PlanSelector.tsx` — isDowngrade(다운그레이드 불가) + isLateralChange(플랜 변경) 분기 추가, 우선순위 명시 ✅
+- `useTtsQueue.ts` — generationRef 기반 race condition 수정, abort/ERR_CANCELED 토스트 미출력 ✅
+- `ChatPage.tsx` — userId null 가드, 불러오는 중 렌더, onSubmit stop() 순서 수정 ✅
+- `App.tsx` — /chat 라우터 레벨 userId 가드 추가 (플리커 원천 차단) ✅
+- `pnpm typecheck` 0 errors ✅
+- 커밋: `3d575c9 fix(frontend): 다운그레이드 방지·TTS 경쟁조건·ChatPage 가드·라우터 userId 가드 수정`
+
+---
+
+## Phase 11 — 플랜 한글화 + standard 삭제 + PlanSelector 구매 단일화 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_plan-rename-restructure`
+**handoff 파일:** `.ai/handoffs/2026-06-18_plan-rename-restructure/work-order.md`
+
+### 작업 배경 및 목표
+
+과제 요구사항과 실제 구현의 불일치를 해소하는 작업. 플랜 이름이 영문(free/basic/standard/premium)으로 돼 있고 standard 플랜이 존재했으나, 요구사항은 한글 3종(무료/베이직/프리미엄 플러스)만 명시. PlanSelector의 업그레이드/다운그레이드 분기도 제거하고 "구매" 단일 흐름으로 단순화. 3회 Codex 리뷰(계획 초안 → work-order → 판정 검증)로 계획을 보완 후 구현.
+
+### 주요 프롬프트 예시
+
+> "free도 '무료'로 해주고 전체적으로 깊게 생각하고 한번 계획 잡아봐 → /cm_run 진행해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| memberships_spec 상단 let 이름 | `basic_plan` (premium_plan 대신) | 상단을 premium_plan으로 하면 upgrade describe 내 let과 이름 겹침 + "같은 플랜으로 업그레이드" 논리 오류 발생. 3차 Codex 리뷰에서 발견 |
+| db 갱신 전략 | `rails db:reset` (replant 대신) | replant는 FK truncate 순서 미보장. 2차 리뷰에서 지적. 실제로 환경 마커 문제로 막혀 `db:environment:set` 후 처리 |
+| useUpgrade export | hook export 유지, HomePage import만 제거 | API 엔드포인트 변경 비목표. 3차 리뷰에서 명시적으로 정책 확정 |
+| duration_days 타입 | optional → 필수(z.number()) | 화면에 "undefined일" 렌더 위험. 1차 리뷰에서 발견 |
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_plan-rename-restructure](2026-06-18_plan-rename-restructure/2026-06-18_plan-rename-restructure_done.png)
+
+### 최종 결과 요약
+
+- 플랜 3종 DB 반영: `무료 / 베이직 / 프리미엄 플러스` ✅
+- `admin_revoke_service.rb` "free" → "무료" 동기화 (런타임 오류 방지) ✅
+- `PlanSelector.tsx` — onUpgrade 제거, 구매 단일, 내림차순 정렬, duration_days 표시 ✅
+- `HomePage.tsx` — useUpgrade 제거, 토스트·설명 문구 한글 플랜명 정합 ✅
+- `PlanSelector.test.tsx` — 전면 재작성, 4개 케이스 (현재플랜/구매/정렬/콜백) ✅
+- `bundle exec rspec` 53 examples, 0 failures ✅
+- `pnpm typecheck` 0 errors ✅
+- `pnpm test` 7 files, 17 tests passed ✅
+- 커밋: `1565415 feat(membership): 플랜 한글화 + standard 삭제 + PlanSelector 구매 단일화`
+
+---
+
+## Phase 12 — 네비게이션 대화 메뉴 멤버십 가드 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_nav-chat-guard`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_nav-chat-guard/work-order.md`
+
+### 작업 배경 및 목표
+
+상단 네비게이션의 "대화" 메뉴가 멤버십 등급에 관계없이 항상 노출되어 있어, `can_talk` 플랜이 없는 사용자가 진입 후 403/토스트 에러를 만나는 문제가 있었다.  
+진입 전에 메뉴 자체를 숨겨 불필요한 혼란을 제거하고, UX를 개선하는 것이 목표이다.
+
+### 주요 프롬프트 예시
+
+> "상단에 '홈, 대화, 학습, 어드민' 에서의 대화부분만 멤버십 등급에 따라 보이고 안보이는거지"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 대화 메뉴 처리 방식 | 숨김(conditional render) | 사용자 명시: "보이고 안보이는 것" |
+| 멤버십 조회 위치 | Layout.tsx 내부 | nav를 직접 렌더하는 컴포넌트에서 처리가 자연스러움 |
+| 로딩 중 처리 | 숨김 | 로딩 완료 전 메뉴가 잠깐 보였다 사라지는 깜빡임 방지 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_nav-chat-guard](docs/2026-06-18_nav-chat-guard/2026-06-18_nav-chat-guard_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 13 — serialize_membership plan 필드 누락 수정 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_serialize-membership-fix`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_serialize-membership-fix/work-order.md`
+
+### 작업 배경 및 목표
+
+Codex 리뷰를 통해 두 컨트롤러의 `serialize_membership`이 프론트 `PlanSchema` 필수 필드와 불일치함을 발견했다.  
+`memberships_controller`는 `duration_days` 누락, `admin/memberships_controller`는 plan 필드 5개 누락.  
+Zod parse 실패로 구매 성공임에도 "구매 실패" 토스트가 뜨는 문제를 수정한다.
+
+### 주요 프롬프트 예시
+
+> "왜 구매 실패했다는 토스트가 뜨고 맴버십 변화가 없을까? 깊게 확인해보고 깊게 생각후 답변해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| serialize_membership 공통화 여부 | 각 컨트롤러 개별 수정 | 공통화는 리팩터 범위, 지금은 필드 누락 버그픽스가 목적 |
+| admin plan 필드 범위 | 일반 memberships_controller와 동일하게 맞춤 | PlanSchema 재사용 가능하도록 동기화 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_serialize-membership-fix](docs/2026-06-18_serialize-membership-fix/2026-06-18_serialize-membership-fix_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_serialize-membership-fix](docs/2026-06-18_serialize-membership-fix/2026-06-18_serialize-membership-fix_done.png)
+
+### 최종 결과 요약
+
+- `memberships_controller.rb` serialize_membership plan에 `duration_days` 추가 ✅
+- `admin/memberships_controller.rb` serialize_membership plan에 5개 필드 추가 ✅
+- `bundle exec rspec` 14 examples, 0 failures ✅
+- 구매/업그레이드 성공 시 Zod parse 실패 → "구매 실패" 토스트 오동작 해결
+
+---
+
+## Phase 14 — Waveform idle 상태 수평선 표시 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_waveform-idle`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_waveform-idle/work-order.md`
+
+### 작업 배경 및 목표
+
+ChatPage 진입 시 Waveform canvas가 완전히 비어 있어 어떤 영역인지 구분이 어려웠다.
+idle 상태에서 canvas 중앙에 수평 직선을 그려 음성 파형 영역임을 시각적으로 안내한다.
+
+### 주요 프롬프트 예시
+
+> "http://localhost:5173/chat 에서 밑에 음성 나오면 표시해주는거 화면 처음 들어오면 기본으로 주파수 모양으로 지그제그 되어 있으면 안됌?"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| idle 표현 방식 | 수평 직선 | 애니메이션 없는 단순 flat line이 "대기 중" 상태를 직관적으로 표현 |
+| idle 색상 | `var(--color-border)` | 비활성 상태임을 primary 색상과 구분 |
+| 구현 위치 | 기존 useEffect 내 early return 전 | 별도 effect 분리 없이 최소 변경 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_waveform-idle](docs/2026-06-18_waveform-idle/2026-06-18_waveform-idle_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-18_waveform-idle](docs/2026-06-18_waveform-idle/2026-06-18_waveform-idle_done.png)
+
+### 최종 결과 요약
+
+- `Waveform.tsx` — idle 상태 수평선 렌더 추가, dead code 제거 ✅
+- `pnpm typecheck` 0 errors ✅
+- ChatPage 첫 진입 시 canvas 중앙에 수평선이 표시되어 영역 인지 가능
+
+---
+
+## Phase 15 — 어드민 멤버십 테이블 UX 개선 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_admin-table-ux`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_admin-table-ux/work-order.md`
+
+### 작업 배경 및 목표
+
+`/admin` 멤버십 관리 테이블에서 헤더 정렬이 일부만 center이고 일부는 left인 불일치 문제,
+"삭제" 컬럼명이 무엇을 삭제하는지 불명확한 문제,
+그리고 멤버십 없는 유저에게 "없음" 대신 "무료"로 표시해 상태를 더 명확히 하는 세 가지 UX 개선 작업.
+
+### 주요 프롬프트 예시
+
+> "어드민 멤버십 관리 그리드에서 상단 컬럼명들은 전부 중앙으로 가게 해주고 삭제 컬럼명은 멤버십 삭제 로 해줘. A 로 하고 삭제 되면 현재 멤버십은 없음이 아니라 무료가 되게 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 헤더 정렬 방향 | 전체 center | 기존 일부 left/center 혼재 → 시각 일관성 |
+| 컬럼명 변경 | "삭제" → "멤버십 삭제" | 삭제 대상이 유저가 아님을 명확히 |
+| 폴백 텍스트 | "없음" → "무료" | 멤버십이 없어도 "무료 플랜" 상태임을 UI에 반영 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_admin-table-ux](docs/2026-06-18_admin-table-ux/2026-06-18_admin-table-ux_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 16 — 결제 팝업 모달 + PG 교체 레이어 + 대화 시작 업그레이드 팝업 (2026-06-18)
+
+**태스크 ID:** `2026-06-18_payment-modal-ux`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_payment-modal-ux/work-order.md`
+
+### 작업 배경 및 목표
+
+홈 화면 UX 3가지 개선 요청:
+1. 플랜 구매 버튼 클릭 시 실제 결제처럼 카드 정보 입력 팝업이 있어야 함 (현재는 즉시 구매 처리됨)
+2. 결제 완료 버튼은 백엔드 mock 결제 객체를 호출하되, 추후 PG사 API 교체가 쉽도록 인터페이스 레이어를 설계해야 함
+3. 멤버십 부족 시 "대화 시작" 버튼 클릭하면 토스트 대신 안내 팝업이 표시되어야 함
+모든 구현은 TDD(Red→Green→Refactor) 방식 + 디자인 토큰 변수 사용 의무화.
+
+### 주요 프롬프트 예시
+
+> "사용자 선택후 플랜구매(구매 버튼 클릭) 했을 때 팝업으로 실제 결제처럼 입력란이 있어야 하고... 이 내용은 추후에 PG사 결제 API가 생기면 교체가 용이하도록 고려하여 개발해야 한다. 만약 해당 멤버십이 아니라면 '대화 시작' 버튼을 누를 때 토스트가 아닌 작은 팝업으로 안내해야 한다."
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 결제 팝업 방식 | 모달 (인라인 아님) | 결제라는 중요 액션임을 UX상 명확히 구분, 추후 PG SDK 진입점으로 교체 용이 |
+| PG 교체 방식 | initializer 상수 레이어 (`PaymentGateway`) | `purchase_service.rb` 수정 없이 파일 1줄 교체로 PG사 전환 가능 |
+| 업그레이드 안내 | 팝업 (토스트 제거) | 토스트는 일시적으로 사라져 놓치기 쉬움, 팝업은 플랜 구매 유도 액션 포함 가능 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_payment-modal-ux](docs/2026-06-18_payment-modal-ux/2026-06-18_payment-modal-ux_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 17 — 결제 모달 UX 개선 (입력 분할 + 자동 포커스 + 버튼 통일) (2026-06-18)
+
+**태스크 ID:** `2026-06-18_payment-modal-input-ux`  
+**handoff 파일:** `.ai/handoffs/2026-06-18_payment-modal-input-ux/work-order.md`
+
+### 작업 배경 및 목표
+
+결제 모달 Phase 16 구현 후 파생된 UX 개선 4가지:
+1. PlanSelector의 "구매"·"현재 플랜" 버튼 높이가 box model 차이로 불일치하는 문제 수정
+2. PaymentModal을 닫을 때(취소·ESC·오버레이) 입력값이 초기화되지 않는 문제 수정
+3. 카드번호를 4자리 input 4개로 분리하고 4자 입력 시 다음 칸으로 자동 포커스
+4. 유효기간을 MM·YY 별도 input으로 분리하고 입력 완료 시 CVC → 결제 완료 버튼 순서로 자동 포커스
+
+### 주요 프롬프트 예시
+
+> "하단의 프리미엄 플러스, 베이직의 구매·현재 플랜 버튼 크기가 같아야 한다. 구매 버튼 클릭 시 뜨는 결제 정보 입력에서 기입한 내용은 해당 화면을 벗어나면 잊혀져야 한다. 카드번호 입력은 4칸씩 입력할 수 있는 input을 4개 나열해서 4개 다 치면 다음으로 이동하게 해야 한다. 유효기간도 MM과 YY가 각자 다른 input이어야 한다."
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 카드번호 분할 방식 | input 4개 (단일 input 아님) | 실제 카드 입력 UX 재현, 4자리 단위 자동 이동으로 사용자 편의 |
+| 유효기간 분리 | MM·YY 각각 별도 input + `/` 구분자 | 월·연도 의미 구분 명확, 각 필드 완성 시 자동 포커스 가능 |
+| CVC 완료 → 결제 완료 버튼 포커스 | confirmBtnRef.focus() | 마지막 입력 후 마우스 없이 엔터만으로 결제 완료 가능한 키보드 UX |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-18_payment-modal-input-ux](docs/2026-06-18_payment-modal-input-ux/2026-06-18_payment-modal-input-ux_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 18 — 어드민 역할 시스템 재설계 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_admin-role-system`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_admin-role-system/work-order.md`
+
+### 작업 배경 및 목표
+
+기존 `X-Admin-Key` 헤더 방식 어드민 인증이 DB 역할과 무관해 설계 결함이 있었다.
+`users.role: string` 컬럼을 도입해 DB 레벨 역할 모델을 구축하고,
+키 입력 방식을 완전히 제거한 뒤 AdminGuard + `useCurrentUserProfile` 훅으로
+역할 기반 접근 제어를 전 계층에 구현한다.
+
+### 주요 프롬프트 예시
+
+> "어드민 계정이 따로 있어서 어드민 화면을 이용할 수 있어야 한다. 어드민 계정이 아닌 대상은 어드민 화면으로 들어갈 수 없다. 상단의 어드민은 해당 계정이 아니면 목록에 존재하지 않는다. 고정적으로 어드민 권한을 부여할 수 있게 DB부터 잘 구성되어 있어야 한다. 하나의 계정은 고정으로 어드민 권한을 가진다."
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| role 컬럼 타입 | `string` (boolean 아님) | 현업 경험에서 검증된 패턴 — boolean은 권한이 늘어날 때마다 컬럼 추가 필요, string은 값만 추가하면 됨 |
+| DB check constraint 추가 | `CHECK (role IN ('admin') OR role IS NULL)` | 앱 레이어 우회 시에도 잘못된 role 값 차단 — 앱 검증만으로는 오염값 가능 |
+| `require_user!` → `require_admin!` 순서 명시 | admin 컨트롤러에 두 before_action 모두 명시 | 비로그인과 비관리자를 다른 오류로 구분하기 위해 — 단일 require_admin!만 있으면 nil.admin? 처리가 &.으로만 묻혀 흐름이 불명확 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_admin-role-system](docs/2026-06-19_admin-role-system/2026-06-19_admin-role-system_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 19 — AdminPage 멤버십 캐시 무효화 버그 수정 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_admin-page-cache-fix`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_admin-page-cache-fix/work-order.md`
+
+### 작업 배경 및 목표
+
+어드민이 특정 유저에게 멤버십을 부여하거나 회수한 뒤, UserDropdown으로 해당 유저로 전환하면
+변경 내용이 즉시 반영되지 않고 새로고침 후에야 적용되는 버그가 있었다.
+근본 원인은 `grantMutation`, `revokeMutation`의 `onSuccess`가 `["adminUsers"]` 캐시만
+무효화하고, 유저별 멤버십 캐시 `["membership", targetUserId]`를 무효화하지 않은 것이었다.
+TDD 방식(Red → Green)으로 회귀 테스트를 추가하고 버그를 수정한다.
+
+### 주요 프롬프트 예시
+
+> "왜 관리자가 다른 사람 멤버십을 바꾸고 현재 사용자를 다른 사람으로 바로 바꾸면 바로 적용이 안돼니? 새로고침 해야 적용이 되네?"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 캐시 무효화 방식 | Option A — onSuccess에서 개별 invalidate 추가 | 가장 국소적 변경. refetchInterval/글로벌 무효화 방식보다 영향 범위가 작고 예측 가능 |
+| revokeMutation 시그니처 유지 | `mutate(userId)` 숫자 직접 전달 유지 | `onSuccess(_, userId)` 두 번째 인자가 숫자이므로 `onSuccess(_, { userId })` 구조분해하면 undefined — 시그니처 변경은 이번 버그와 무관하여 비목표 |
+| TDD 순서 (Red → Green) | b1 실패 테스트 먼저, b2에서 수정 | 버그를 테스트로 문서화한 뒤 수정해야 회귀 방지 보장 — 순서 뒤집으면 TDD 효과 없음 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_admin-page-cache-fix](docs/2026-06-19_admin-page-cache-fix/2026-06-19_admin-page-cache-fix_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-19_admin-page-cache-fix](docs/2026-06-19_admin-page-cache-fix/2026-06-19_admin-page-cache-fix_done.png)
+
+### 최종 결과 요약
+
+- 수용 기준 6개 전항목 PASS: `["adminUsers"]` + `["membership", targetUserId]` invalidate 양쪽 확인
+- `AdminPage.test.tsx` 4개 테스트 신규 추가 (TDD Red → Green 순서 준수)
+- `AdminPage.tsx` onSuccess 최소 수정 — `grantMutation`: `variables.userId`, `revokeMutation`: `userId`(숫자)
+- `revokeMembership` API 함수 시그니처 유지, 백엔드 변경 없음
+- 수정 파일: `frontend/src/pages/AdminPage.tsx` (+6/-2), `frontend/src/pages/__tests__/AdminPage.test.tsx` (+176 신규)
+
+---
+
+## Phase 20 — AdminPage 버튼 hover UI 개선 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_admin-button-hover`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_admin-button-hover/work-order.md`
+
+### 작업 배경 및 목표
+
+AdminPage의 플랜 부여 버튼(베이직, 프리미엄 플러스)과 삭제 버튼에 hover 효과가 전혀 없어
+인터랙션 피드백이 부재했다. 유저·이메일 컬럼도 좌측 정렬로 다른 컬럼과 불일치했다.
+`AdminButton` 공용 컴포넌트를 `variant` 기반 의미 중심 API로 신규 생성하고,
+hover(색상 전환 + scale), focus-visible, disabled 상태 분리를 컴포넌트 내부에서 처리한다.
+
+### 주요 프롬프트 예시
+
+> "부여 컬럼의 베이직, 프리미엄 플러스 버튼에 마우스 올리면 호버 되게 해야함 / 삭제 버튼도 호버 되게 / 유저, 이메일, 삭제는 중앙 정렬"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| variant 방식 | `plan-active \| plan-inactive \| danger` | Codex 리뷰: 색 주입형 props는 의미 없는 스타일 전달기. variant가 호출부를 단순하게 유지 |
+| disabled 의미 분리 | `submitting → cursor:progress`, `unavailable → cursor:not-allowed` | 처리 중과 영구 비활성의 UX 의미가 다름. 단순화하면 정보 손실 |
+| transition 제한 | `background-color, color, transform` 3개만 | `all`은 의도하지 않은 속성까지 애니메이션 대상이 되어 과함 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_admin-button-hover](docs/2026-06-19_admin-button-hover/2026-06-19_admin-button-hover_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-19_admin-button-hover](docs/2026-06-19_admin-button-hover/2026-06-19_admin-button-hover_done.png)
+
+### 최종 결과 요약
+
+- 수용 기준 10개 전항목 PASS: variant 색상, hover scale, disabled cursor 분리, focus-visible, 정렬, transition 제한
+- `AdminButton.tsx` 신규 생성 (+110) — `plan-active | plan-inactive | danger` variant, `onMouseEnter/Leave`, `onFocus/Blur` 내부 격리
+- `UserMembershipTable.tsx` 수정 (+19/-36) — AdminButton 적용, 유저·이메일 td `textAlign:center` 추가
+- `AdminButton.test.tsx` 신규 추가 (사용자 승인 범위 확장) — hover, disabled, focus, transition, 정렬 검증
+- 백엔드 변경 없음
+
+---
+
+## Phase 21 — 전역 버튼 hover UI 개선 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_global-button-hover`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_global-button-hover/work-order.md`
+
+### 작업 배경 및 목표
+
+Phase 20에서 AdminButton hover가 완료된 후, 동일 패턴을 앱 전반(네비, 홈, PlanSelector, UserDropdown)으로 확장.
+공용 `Button` 컴포넌트를 신규 생성하고, AdminButton은 내부에서 Button을 위임하도록 리팩터.
+`components/ui/` 는 design agent 전담 경계이나, 사용자 승인하에 이번 handoff에서만 예외 허용.
+
+### 주요 프롬프트 예시
+
+> "지금과 같은 느낌으로 다음과 같은 버튼들도 hover 추가해줘 — 상단의 홈/대화/학습/초기화, 홈 화면에 대화시작/학습시작/구매, 컴포넌트 같이 쓸 수 있는건 써서 재사용성 챙겨주고"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| `components/ui/Button.tsx` 신규 (Option B) | Button 신규 생성, AdminButton 내부 위임 | 테스트 경로 보존, admin API 보존. design 경계는 사용자 승인하에 진행 |
+| PaymentModal 제외 | 이번 범위 밖 | `isPending` 시 `--color-disabled` 배경 — AdminButton `opacity:0.6` 방식과 상태 모델 불일치 |
+| NavigationLink isActive 우선 분기 명시 | 코드에 주석 포함 | active+hover 동시 발생 시 스타일 충돌 방지. 명시적 분기 없으면 hover가 active를 덮음 |
+| `secondary` base 색상 | `--color-surface-subtle` (--color-surface 아님) | Codex 리뷰 반영 — AdminButton `plan-inactive`가 `--color-surface-subtle` 전제로 구현돼 있어, `--color-surface`로 가면 b3 위임 시 시각 계약이 조용히 바뀜 |
+| `ButtonProps.style` prop | 제거, `minHeight`만 허용 | Codex 리뷰 반영 — `style` 오버라이드 허용 시 Button이 스타일 우회 통로가 됨. 레이아웃 제어는 호출부 래퍼에서 처리 |
+
+### 시작 화면
+
+> 스크린샷 파일 없음 — 폴더 생성 전 진행으로 미저장
+
+### 완료 화면
+
+> 스크린샷 파일 없음 — 폴더 생성 전 진행으로 미저장
+
+### 최종 결과 요약
+
+- 수용 기준 12개 전항목 PASS: Button 4종 variant, secondary --color-surface-subtle, AdminButton 위임, NavigationLink active 우선, UserDropdown ghost, HomePage 버튼, PlanSelector 구매/현재플랜 모양 통일
+- `Button.tsx` 신규 생성 — primary/secondary/danger/ghost variant, hover/focus/disabled, minHeight prop
+- `AdminButton.tsx` 리팩터 — Button 내부 위임, plan-active/inactive/danger 외부 API 유지
+- `Layout.tsx` — NavigationLink hover 추가, isActive > isHovered > base 우선순위 코드 명시
+- `UserDropdown.tsx`, `HomePage.tsx`, `PlanSelector.tsx` — Button 컴포넌트 적용
+- `PlanSelector.tsx` 버그 수정 — 구매/현재플랜 borderRadius 통일(radius-chip), 래퍼 flex column으로 너비 일치
+
+---
+
+## Phase 23 — 플랜 구매 페이지 분리 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_plans-page-split`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_plans-page-split/work-order.md`
+
+### 작업 배경 및 목표
+
+사용자 피드백: "플랜 구매 페이지가 따로 있었으면 좋겠다."  
+현재 `HomePage(/)`에 멤버십 현황 + 대화/학습 버튼 + 플랜 구매 섹션이 뭉쳐 있어 홈의 역할이 불명확했다.  
+플랜 구매를 `/plans` 별도 페이지로 분리하고, 학습시작 버튼의 `disabled` UX를 대화시작 버튼과 동일한 모달 패턴으로 통일한다.  
+Claude+Codex 2차 회의를 거쳐 로딩 가드, blockedFeature 단일 상태, UpgradePromptModal CTA 확장까지 계획을 완성했다.  
+추가로 상단 nav에 "구매" 링크를 항상 표시(홈|대화|학습|어드민|구매 순서)하고, HomePage의 "플랜 구매하기" ghost 버튼을 제거하도록 범위를 확장했다.
+
+### 주요 프롬프트 예시
+
+> `플랜 구매 페이지가 따로 있었으면 좋겠다. 깊게 생각하고 계획 세워봐.`
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 학습버튼 disabled 제거 → 모달 | UpgradePromptModal 패턴 통일 | 대화 버튼과 동일한 패턴으로 클릭 → 모달 → 안내 흐름 통일 |
+| blockedFeature 단일 상태 | "talk" \| "learn" \| null | boolean 2개 동시 true 충돌 방지, 모달 하나에 상태 하나 원칙 |
+| PlansPage userId null 차단 | UI 레벨 차단 + 안내 표시 | usePurchase가 null userId도 mutation 허용하므로 UI에서 명확한 안내 제공 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_plans-page-split](docs/2026-06-19_plans-page-split/2026-06-19_plans-page-split_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 22 — /chat 화면 버튼 hover 추가 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_chat-button-hover`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_chat-button-hover/work-order.md`
+
+### 작업 배경 및 목표
+
+Phase 21에서 전역 Button 컴포넌트와 hover 인터랙션을 구축했으나, `/chat` 화면의 마이크 켜기/끄기, 답변 완료, 플레이 ▶ 버튼은 대상에서 제외됐다.  
+이 세 버튼은 isActive 2상태 분기, 독립 스타일 요구 등으로 `Button.tsx` 재사용이 적합하지 않아 직접 구현 방식으로 hover를 추가한다.  
+TDD(Red → Green) 방식으로 `VoiceInput.test.tsx` 신규 및 `ChatBubble.test.tsx` 보정 후 구현한다.
+
+### 주요 프롬프트 예시
+
+> `/chat 화면의 마이크 켜기, 답변 완료, 플레이 버튼에도 hover를 줬으면 좋겠어. 이 내용 깊게 생각해보고 답해줘.`
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| Button.tsx 재사용 불가 | 각 버튼 직접 구현 | isActive 2상태(켜기/끄기)에 따른 base 색 분기가 Button variant 체계와 맞지 않음 |
+| brightness vs opacity | filter: brightness(0.85) | opacity 0.6은 disabled 전용 표현 — hover에도 opacity 사용 시 두 상태 시각 충돌 |
+| ChatBubble 두 분기 보전 | audioBlobUrl/onReplay 모두 검증 | TDD Red 단계에서 한 분기라도 누락 시 의미 있는 실패를 감지하지 못해 TDD 효과 저하 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_chat-button-hover](docs/2026-06-19_chat-button-hover/2026-06-19_chat-button-hover_start.png)
+
+### 완료 화면
+
+![Final Check PASS — 2026-06-19_chat-button-hover](docs/2026-06-19_chat-button-hover/2026-06-19_chat-button-hover_done.png)
+
+### 최종 결과 요약
+
+- 수용 기준 12개 전항목 PASS: 마이크 켜기/끄기 hover, 답변 완료 hover, 플레이 ▶ hover, disabled 무시, transition 개별 지정
+- `VoiceInput.tsx` 수정 — 마이크 켜기(`primary-dark+scale`), 끄기(`brightness(0.85)+scale`), 답변 완료(`primary-light/primary`) hover 추가
+- `ChatBubble.tsx` 수정 — 플레이 ▶ `brightness(0.9)` hover 추가
+- `VoiceInput.test.tsx` 신규 — 4케이스 TDD 작성
+- `ChatBubble.test.tsx` 보정 — `audioBlobUrl`/`onReplay` 분기 포함 5케이스 보전
+- `Button.tsx`, `PaymentModal.tsx` 미변경 확인

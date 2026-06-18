@@ -4,30 +4,20 @@ import Button from "@/components/ui/Button"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
 import MembershipCard from "@/features/membership/components/MembershipCard"
-import PaymentModal from "@/features/membership/components/PaymentModal"
-import PlanSelector from "@/features/membership/components/PlanSelector"
 import UpgradePromptModal from "@/features/membership/components/UpgradePromptModal"
-import {
-  useMembership,
-  usePlans,
-  usePurchase
-} from "@/features/membership/hooks/useMembership"
+import { useMembership } from "@/features/membership/hooks/useMembership"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
-import type { Plan } from "@/types/membership"
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { showToast } = useToast()
   const { userId } = useCurrentUser()
   const {
     data: membership,
     isLoading,
     refetch: refetchMembership
   } = useMembership(userId)
-  const { data: plans = [], isLoading: isPlansLoading } = usePlans()
-  const purchase = usePurchase(userId)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const { showToast } = useToast()
+  const [blockedFeature, setBlockedFeature] = useState<"talk" | "learn" | null>(null)
 
   useEffect(() => {
     if (!membership?.expires_at) return
@@ -56,11 +46,12 @@ export default function HomePage() {
   const canLearn =
     (membership?.status === "active" || membership?.status === "trial") &&
     membership.plan.can_learn
+  const isButtonsLoading = isLoading && userId !== null
 
   return (
     <Layout
       title="멤버십 홈"
-      description="유저를 선택하고 현재 멤버십 상태를 확인해요. 필요한 플랜을 구매하면 바로 대화와 학습 기능을 열 수 있어요."
+      description="유저를 선택하고 현재 멤버십 상태를 확인해요. 대화와 학습 기능으로 이동하거나 플랜 구매 페이지로 이동할 수 있어요."
     >
       <div style={{ display: "grid", gap: "var(--space-24)" }}>
         {!userId ? (
@@ -89,9 +80,11 @@ export default function HomePage() {
           <Button
             label="대화 시작"
             variant="primary"
+            disabled={isButtonsLoading}
+            disabledReason={isButtonsLoading ? "unavailable" : null}
             onClick={() => {
               if (!canTalk) {
-                setShowUpgradeModal(true)
+                setBlockedFeature("talk")
                 return
               }
               void navigate("/chat")
@@ -102,83 +95,31 @@ export default function HomePage() {
           <Button
             label="학습 시작"
             variant="secondary"
-            disabled={!canLearn}
-            disabledReason={!canLearn ? "unavailable" : null}
+            disabled={isButtonsLoading}
+            disabledReason={isButtonsLoading ? "unavailable" : null}
             onClick={() => {
               if (!canLearn) {
-                showToast("학습 기능은 베이직 이상 멤버십이 필요해요.", "info")
+                setBlockedFeature("learn")
                 return
               }
               void navigate("/learn")
             }}
             minHeight="48px"
           />
+
         </section>
 
         <UpgradePromptModal
-          open={showUpgradeModal}
-          requiredPlanName="프리미엄 플러스"
-          onClose={() => setShowUpgradeModal(false)}
+          open={blockedFeature !== null}
+          featureName={blockedFeature === "talk" ? "대화" : "학습"}
+          requiredPlanName={blockedFeature === "talk" ? "프리미엄 플러스" : "베이직"}
+          onClose={() => setBlockedFeature(null)}
+          onGoPlans={() => {
+            setBlockedFeature(null)
+            void navigate("/plans")
+          }}
         />
-
-        <section style={{ display: "grid", gap: "var(--space-16)" }}>
-          <div>
-            <h2
-              style={{
-                margin: "0 0 var(--space-8)",
-                fontSize: "var(--font-size-4xl)"
-              }}
-            >
-              플랜 구매
-            </h2>
-            <p style={{ margin: 0, color: "var(--color-text-secondary)" }}>
-              원하는 플랜을 선택하고 구매하세요.
-            </p>
-          </div>
-
-          {isPlansLoading ? (
-            <section
-              style={{
-                padding: "var(--space-20)",
-                borderRadius: "var(--radius-card)",
-                backgroundColor: "var(--color-surface)",
-                border: "1px solid var(--color-border)"
-              }}
-            >
-              플랜 목록을 불러오는 중이에요.
-            </section>
-          ) : (
-            <PlanSelector
-              plans={plans}
-              currentMembership={membership}
-              onSelectPlan={(plan) => setSelectedPlan(plan)}
-              isPending={purchase.isPending}
-            />
-          )}
-        </section>
       </div>
-
-      <PaymentModal
-        open={selectedPlan !== null}
-        planName={selectedPlan?.name ?? ""}
-        onConfirm={(cardData) => {
-          if (selectedPlan === null) return
-          purchase.mutate(
-            { planId: selectedPlan.id, cardData },
-            {
-              onSuccess: () => {
-                setSelectedPlan(null)
-                showToast("멤버십이 활성화되었어요.", "success")
-              },
-              onError: () => {
-                showToast("구매에 실패했어요. 다시 시도해주세요.", "error")
-              }
-            }
-          )
-        }}
-        onClose={() => setSelectedPlan(null)}
-        isPending={purchase.isPending}
-      />
     </Layout>
   )
 }

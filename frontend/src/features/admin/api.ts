@@ -1,6 +1,6 @@
-import axios, { AxiosHeaders } from "axios"
 import { z } from "zod"
-import { BASE_URL, API_ENDPOINTS } from "@/config/api"
+import { apiClient } from "@/api/client"
+import { API_ENDPOINTS } from "@/config/api"
 
 const AdminMembershipSchema = z.object({
   status: z.string(),
@@ -31,24 +31,8 @@ const AdminGrantResponseSchema = z.object({
 
 export type AdminUser = z.infer<typeof AdminUserSchema>
 
-export const adminClient = axios.create({
-  baseURL: BASE_URL
-})
-
-adminClient.interceptors.request.use((config) => {
-  const adminKey = window.sessionStorage.getItem("adminKey")
-
-  if (adminKey) {
-    const headers = AxiosHeaders.from(config.headers)
-    headers.set("X-Admin-Key", adminKey)
-    config.headers = headers
-  }
-
-  return config
-})
-
 export async function fetchAdminUsers() {
-  const response = await adminClient.get(API_ENDPOINTS.adminUsers)
+  const response = await apiClient.get(API_ENDPOINTS.adminUsers)
   return AdminUserArraySchema.parse(response.data.data)
 }
 
@@ -57,7 +41,7 @@ export async function grantMembership(
   planId: number,
   durationDays: number
 ) {
-  const response = await adminClient.post(
+  const response = await apiClient.post(
     `${API_ENDPOINTS.adminUsers}/${userId}/memberships`,
     {
       plan_id: planId,
@@ -69,7 +53,7 @@ export async function grantMembership(
 }
 
 export async function revokeMembership(userId: number) {
-  const response = await adminClient.delete(
+  const response = await apiClient.delete(
     `${API_ENDPOINTS.adminUsers}/${userId}/memberships/current`
   )
 
