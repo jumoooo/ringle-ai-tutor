@@ -35,7 +35,12 @@ module Api
             expires_at: membership.expires_at.iso8601,
             plan: {
               id: membership.plan.id,
-              name: membership.plan.name
+              name: membership.plan.name,
+              monthly_price: membership.plan.monthly_price,
+              can_learn: membership.plan.can_learn,
+              can_talk: membership.plan.can_talk,
+              can_analyze: membership.plan.can_analyze,
+              duration_days: membership.plan.duration_days
             }
           }
         end
