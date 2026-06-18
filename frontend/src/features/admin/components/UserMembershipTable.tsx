@@ -38,13 +38,13 @@ export default function UserMembershipTable({
       >
         <thead>
           <tr style={{ backgroundColor: "var(--color-surface-subtle)" }}>
-            {(["유저", "이메일", "현재 멤버십", "만료일", "부여", "삭제"] as const).map((heading) => (
+            {(["유저", "이메일", "현재 멤버십", "만료일", "부여", "멤버십 삭제"] as const).map((heading) => (
               <th
                 key={heading}
                 scope="col"
                 style={{
                   padding: "var(--space-16)",
-                  textAlign: (["현재 멤버십", "만료일", "부여"].includes(heading) ? "center" : "left") as React.CSSProperties["textAlign"],
+                  textAlign: "center" as React.CSSProperties["textAlign"],
                   color: "var(--color-text-secondary)",
                   borderBottom: "1px solid var(--color-border)"
                 }}
@@ -82,7 +82,7 @@ export default function UserMembershipTable({
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
-                {user.membership?.plan_name ?? "없음"}
+                {user.membership?.plan_name ?? "무료"}
               </td>
               <td
                 style={{
@@ -136,6 +136,7 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
