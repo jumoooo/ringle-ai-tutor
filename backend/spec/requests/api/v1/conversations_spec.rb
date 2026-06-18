@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Conversations API", type: :request do
   let(:user) { create(:user) }
-  let(:standard_plan) { create(:plan, :standard) }
+  let(:premium_plan) { create(:plan, :premium) }
 
   describe "POST /api/v1/conversations" do
     context "talk 권한 없는 유저" do
@@ -20,7 +20,7 @@ RSpec.describe "Conversations API", type: :request do
 
     context "talk 권한 있는 유저" do
       before do
-        create(:membership, user: user, plan: standard_plan, status: "active", expires_at: 30.days.from_now)
+        create(:membership, user: user, plan: premium_plan, status: "active", expires_at: 30.days.from_now)
       end
 
       it "201과 first_message를 반환한다" do

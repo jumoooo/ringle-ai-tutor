@@ -7,7 +7,7 @@ export const PlanSchema = z.object({
   can_learn: z.boolean(),
   can_talk: z.boolean(),
   can_analyze: z.boolean(),
-  duration_days: z.number().optional()
+  duration_days: z.number()
 })
 
 export const MembershipStatusSchema = z.union([

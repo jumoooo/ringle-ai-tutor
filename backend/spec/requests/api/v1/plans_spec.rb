@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Plans API", type: :request do
   describe "GET /api/v1/plans" do
     it "플랜 목록을 반환한다" do
-      create(:plan, :standard)
+      create(:plan, :basic)
       create(:plan, :premium)
 
       get "/api/v1/plans"

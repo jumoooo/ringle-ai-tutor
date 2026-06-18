@@ -1,4 +1,4 @@
-free_plan = Plan.find_or_create_by!(name: "free") do |plan|
+free_plan = Plan.find_or_create_by!(name: "무료") do |plan|
   plan.monthly_price = 0
   plan.can_learn = false
   plan.can_talk = false
@@ -7,7 +7,7 @@ free_plan = Plan.find_or_create_by!(name: "free") do |plan|
   plan.features = {}
 end
 
-Plan.find_or_create_by!(name: "basic") do |plan|
+Plan.find_or_create_by!(name: "베이직") do |plan|
   plan.monthly_price = 9_900
   plan.can_learn = true
   plan.can_talk = false
@@ -16,21 +16,12 @@ Plan.find_or_create_by!(name: "basic") do |plan|
   plan.features = {}
 end
 
-Plan.find_or_create_by!(name: "standard") do |plan|
-  plan.monthly_price = 19_900
-  plan.can_learn = true
-  plan.can_talk = true
-  plan.can_analyze = false
-  plan.duration_days = 30
-  plan.features = {}
-end
-
-Plan.find_or_create_by!(name: "premium") do |plan|
+Plan.find_or_create_by!(name: "프리미엄 플러스") do |plan|
   plan.monthly_price = 39_900
   plan.can_learn = true
   plan.can_talk = true
   plan.can_analyze = true
-  plan.duration_days = 30
+  plan.duration_days = 60
   plan.features = {}
 end
 

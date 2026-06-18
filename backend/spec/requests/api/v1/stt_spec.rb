@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "STT API", type: :request do
   let(:user) { create(:user) }
-  let(:standard_plan) { create(:plan, :standard) }
+  let(:premium_plan) { create(:plan, :premium) }
 
   describe "POST /api/v1/stt" do
     context "talk 권한 없는 유저" do
@@ -22,7 +22,7 @@ RSpec.describe "STT API", type: :request do
 
     context "talk 권한 있는 유저" do
       before do
-        create(:membership, user: user, plan: standard_plan, status: "active", expires_at: 30.days.from_now)
+        create(:membership, user: user, plan: premium_plan, status: "active", expires_at: 30.days.from_now)
         stub_request(:post, /api\.openai\.com\/v1\/audio\/transcriptions/).to_return(
           status: 200,
           body: { text: "Hello, I would like to practice my pronunciation.", duration: 2.34 }.to_json,
@@ -44,7 +44,7 @@ RSpec.describe "STT API", type: :request do
 
     context "만료된 멤버십" do
       before do
-        create(:membership, user: user, plan: standard_plan,
+        create(:membership, user: user, plan: premium_plan,
                status: "active", expires_at: 1.minute.ago)
       end
 

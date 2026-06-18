@@ -4,7 +4,6 @@ interface PlanSelectorProps {
   plans: Plan[]
   currentMembership: Membership | null | undefined
   onPurchase: (planId: number) => void
-  onUpgrade: (planId: number) => void
   isPending: boolean
 }
 
@@ -12,10 +11,11 @@ export default function PlanSelector({
   plans,
   currentMembership,
   onPurchase,
-  onUpgrade,
   isPending
 }: PlanSelectorProps) {
-  const paidPlans = plans.filter((plan) => plan.monthly_price > 0)
+  const paidPlans = plans
+    .filter((plan) => plan.monthly_price > 0)
+    .sort((leftPlan, rightPlan) => rightPlan.monthly_price - leftPlan.monthly_price)
 
   return (
     <section
@@ -27,23 +27,11 @@ export default function PlanSelector({
     >
       {paidPlans.map((plan) => {
         const isCurrentPlan = currentMembership?.plan.id === plan.id
-        const isDowngrade =
-          currentMembership != null &&
-          currentMembership.status === "active" &&
-          plan.monthly_price < currentMembership.plan.monthly_price
-        const isLateralChange =
-          currentMembership != null &&
-          currentMembership.status === "active" &&
-          plan.monthly_price === currentMembership.plan.monthly_price &&
-          plan.id !== currentMembership.plan.id
-        const isUpgrade =
-          currentMembership !== null &&
-          currentMembership !== undefined &&
-          plan.monthly_price > currentMembership.plan.monthly_price
 
         return (
           <article
             key={plan.id}
+            data-testid="plan-card"
             style={{
               display: "grid",
               gap: "var(--space-12)",
@@ -66,6 +54,15 @@ export default function PlanSelector({
               </h3>
               <p style={{ margin: 0, color: "var(--color-text-secondary)" }}>
                 월 {plan.monthly_price.toLocaleString("ko-KR")}원
+              </p>
+              <p
+                style={{
+                  margin: "var(--space-4) 0 0",
+                  color: "var(--color-text-secondary)",
+                  fontSize: "var(--font-size-sm)"
+                }}
+              >
+                {plan.duration_days}일 이용
               </p>
             </div>
 
@@ -94,52 +91,6 @@ export default function PlanSelector({
                 }}
               >
                 현재 플랜
-              </button>
-            ) : isDowngrade ? (
-              <button
-                type="button"
-                disabled
-                style={{
-                  minHeight: "44px",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--radius-card)",
-                  backgroundColor: "var(--color-disabled)",
-                  color: "var(--color-text-on-primary)"
-                }}
-              >
-                다운그레이드 불가
-              </button>
-            ) : isLateralChange ? (
-              <button
-                type="button"
-                onClick={() => onUpgrade(plan.id)}
-                disabled={isPending}
-                style={{
-                  minHeight: "44px",
-                  border: "none",
-                  borderRadius: "var(--radius-card)",
-                  backgroundColor: "var(--color-primary)",
-                  color: "var(--color-text-on-primary)",
-                  cursor: isPending ? "progress" : "pointer"
-                }}
-              >
-                플랜 변경
-              </button>
-            ) : isUpgrade ? (
-              <button
-                type="button"
-                onClick={() => onUpgrade(plan.id)}
-                disabled={isPending}
-                style={{
-                  minHeight: "44px",
-                  border: "none",
-                  borderRadius: "var(--radius-card)",
-                  backgroundColor: "var(--color-primary)",
-                  color: "var(--color-text-on-primary)",
-                  cursor: isPending ? "progress" : "pointer"
-                }}
-              >
-                업그레이드
               </button>
             ) : (
               <button

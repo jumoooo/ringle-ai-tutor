@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Chat Streams API", type: :request do
   let(:user) { create(:user) }
-  let(:standard_plan) { create(:plan, :standard) }
+  let(:premium_plan) { create(:plan, :premium) }
   let(:json_headers) { { "X-User-Id" => user.id, "Content-Type" => "application/json" } }
 
   describe "POST /api/v1/chat" do
@@ -20,7 +20,7 @@ RSpec.describe "Chat Streams API", type: :request do
       end
 
       it "만료된 멤버십이면 403을 반환한다" do
-        create(:membership, user: user, plan: standard_plan,
+        create(:membership, user: user, plan: premium_plan,
                status: "active", expires_at: 1.minute.ago)
 
         post "/api/v1/chat",
@@ -33,7 +33,7 @@ RSpec.describe "Chat Streams API", type: :request do
 
     context "입력 검증" do
       before do
-        create(:membership, user: user, plan: standard_plan, status: "active", expires_at: 30.days.from_now)
+        create(:membership, user: user, plan: premium_plan, status: "active", expires_at: 30.days.from_now)
       end
 
       it "2001자 메시지면 422와 에러 코드를 반환한다" do
@@ -51,7 +51,7 @@ RSpec.describe "Chat Streams API", type: :request do
 
     context "SSE 스트리밍" do
       before do
-        create(:membership, user: user, plan: standard_plan, status: "active", expires_at: 30.days.from_now)
+        create(:membership, user: user, plan: premium_plan, status: "active", expires_at: 30.days.from_now)
       end
 
       it "존재하지 않는 conversation이면 SSE error 이벤트를 반환한다" do

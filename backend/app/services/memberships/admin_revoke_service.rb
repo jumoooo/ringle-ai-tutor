@@ -9,7 +9,7 @@ module Memberships
 
       PaymentLog.create!(
         user: @user,
-        plan: @user.memberships.order(created_at: :desc).first&.plan || Plan.find_by!(name: "free"),
+        plan: @user.memberships.order(created_at: :desc).first&.plan || Plan.find_by!(name: "무료"),
         action: "revoke",
         result: { revoked_count: revoked_count, revoked_by: "admin" }
       )

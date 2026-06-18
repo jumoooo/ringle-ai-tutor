@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe Memberships::UpgradeService, type: :service do
   let(:user) { create(:user) }
-  let(:current_plan) { create(:plan, :standard) }
+  let(:current_plan) { create(:plan, :basic) }
   let(:premium_plan) { create(:plan, :premium) }
   let(:transaction_id) { "txn_upgrade_spec" }
 
@@ -39,7 +39,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
 
       aggregate_failures do
         expect(current_membership.plan).to eq(premium_plan)
-        expect(current_membership.expires_at).to eq(50.days.from_now)
+        expect(current_membership.expires_at).to eq(80.days.from_now)
         expect(@result[:membership]).to eq(current_membership)
         expect(@result[:transaction_id]).to eq(transaction_id)
         expect(payment_log.action).to eq("upgrade")
@@ -65,13 +65,11 @@ RSpec.describe Memberships::UpgradeService, type: :service do
       create(
         :membership,
         user: user,
-        plan: current_plan,
+        plan: premium_plan,
         status: "active",
         expires_at: 20.days.from_now
       )
-      lower_plan = create(:plan, :basic)
-
-      service = described_class.new(user: user, new_plan: lower_plan)
+      service = described_class.new(user: user, new_plan: current_plan)
 
       expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
     end
@@ -85,7 +83,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
     it "동일 가격의 다른 플랜은 현재 구현에서 허용한다" do
       same_price_plan = create(
         :plan,
-        name: "standard_plus_same_price",
+        name: "basic_same_price",
         monthly_price: current_plan.monthly_price,
         can_learn: true,
         can_talk: true,

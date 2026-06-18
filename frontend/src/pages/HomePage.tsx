@@ -7,8 +7,7 @@ import PlanSelector from "@/features/membership/components/PlanSelector"
 import {
   useMembership,
   usePlans,
-  usePurchase,
-  useUpgrade
+  usePurchase
 } from "@/features/membership/hooks/useMembership"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 
@@ -64,7 +63,6 @@ export default function HomePage() {
   } = useMembership(userId)
   const { data: plans = [], isLoading: isPlansLoading } = usePlans()
   const purchase = usePurchase(userId)
-  const upgrade = useUpgrade(userId)
 
   useEffect(() => {
     if (!membership?.expires_at) {
@@ -126,7 +124,7 @@ export default function HomePage() {
             disabled={false}
             onClick={() => {
               if (!canTalk) {
-                showToast("대화 기능은 Standard 이상 멤버십이 필요해요.", "info")
+                showToast("대화 기능은 프리미엄 플러스 멤버십이 필요해요.", "info")
                 return
               }
 
@@ -140,7 +138,7 @@ export default function HomePage() {
             disabled={!canLearn}
             onClick={() => {
               if (!canLearn) {
-                showToast("학습 기능은 Basic 이상 멤버십이 필요해요.", "info")
+                showToast("학습 기능은 베이직 이상 멤버십이 필요해요.", "info")
                 return
               }
 
@@ -161,7 +159,7 @@ export default function HomePage() {
               플랜 구매
             </h2>
             <p style={{ margin: 0, color: "var(--color-text-secondary)" }}>
-              현재 플랜보다 높은 단계는 업그레이드로, 그 외에는 구매로 처리돼요.
+              원하는 플랜을 선택하고 구매하세요.
             </p>
           </div>
 
@@ -190,17 +188,7 @@ export default function HomePage() {
                   }
                 })
               }}
-              onUpgrade={(planId) => {
-                upgrade.mutate(planId, {
-                  onSuccess: () => {
-                    showToast("플랜이 업그레이드되었어요.", "success")
-                  },
-                  onError: () => {
-                    showToast("업그레이드에 실패했어요.", "error")
-                  }
-                })
-              }}
-              isPending={purchase.isPending || upgrade.isPending}
+              isPending={purchase.isPending}
             />
           )}
         </section>

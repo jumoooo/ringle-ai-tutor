@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe Memberships::PurchaseService, type: :service do
   let(:user) { create(:user) }
-  let(:plan) { create(:plan, :standard) }
+  let(:plan) { create(:plan, :premium) }
   let(:transaction_id) { "txn_purchase_spec" }
 
   around do |example|

@@ -1,17 +1,17 @@
 FactoryBot.define do
   factory :plan do
     sequence(:name) { |index| "plan_#{index}" }
-    monthly_price { 19_900 }
+    monthly_price { 39_900 }
     can_learn { true }
     can_talk { true }
-    can_analyze { false }
-    duration_days { 30 }
+    can_analyze { true }
+    duration_days { 60 }
     features { {} }
 
     initialize_with { Plan.find_or_initialize_by(name: name) }
 
     trait :free do
-      name { "free" }
+      name { "무료" }
       monthly_price { 0 }
       can_learn { false }
       can_talk { false }
@@ -20,7 +20,7 @@ FactoryBot.define do
     end
 
     trait :basic do
-      name { "basic" }
+      name { "베이직" }
       monthly_price { 9_900 }
       can_learn { true }
       can_talk { false }
@@ -28,22 +28,13 @@ FactoryBot.define do
       duration_days { 30 }
     end
 
-    trait :standard do
-      name { "standard" }
-      monthly_price { 19_900 }
-      can_learn { true }
-      can_talk { true }
-      can_analyze { false }
-      duration_days { 30 }
-    end
-
     trait :premium do
-      name { "premium" }
+      name { "프리미엄 플러스" }
       monthly_price { 39_900 }
       can_learn { true }
       can_talk { true }
       can_analyze { true }
-      duration_days { 30 }
+      duration_days { 60 }
     end
   end
 end

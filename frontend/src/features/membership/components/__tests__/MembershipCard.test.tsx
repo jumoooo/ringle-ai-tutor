@@ -7,11 +7,12 @@ const activeMembership = {
   expires_at: "2026-07-17T12:00:00+09:00",
   plan: {
     id: 3,
-    name: "standard",
-    monthly_price: 19900,
+    name: "프리미엄 플러스",
+    monthly_price: 39900,
     can_learn: true,
     can_talk: true,
-    can_analyze: false
+    can_analyze: true,
+    duration_days: 60
   }
 }
 
@@ -19,7 +20,7 @@ describe("MembershipCard", () => {
   it("활성 멤버십 정보를 렌더링해요", () => {
     render(<MembershipCard membership={activeMembership} isLoading={false} />)
 
-    expect(screen.getByText("standard")).toBeInTheDocument()
+    expect(screen.getByText("프리미엄 플러스")).toBeInTheDocument()
     expect(screen.getByText("활성")).toBeInTheDocument()
     expect(screen.getByText("학습")).toBeInTheDocument()
   })
