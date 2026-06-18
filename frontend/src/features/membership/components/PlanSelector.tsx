@@ -109,10 +109,10 @@ export default function PlanSelector({
                 disabled={isPending}
                 style={{
                   minHeight: "44px",
-                  border: "1px solid var(--color-border)",
+                  border: "none",
                   borderRadius: "var(--radius-card)",
-                  backgroundColor: "var(--color-surface-subtle)",
-                  color: "var(--color-text-primary)",
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-text-on-primary)",
                   cursor: isPending ? "progress" : "pointer"
                 }}
               >

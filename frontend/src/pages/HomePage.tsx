@@ -123,7 +123,7 @@ export default function HomePage() {
         >
           <ActionButton
             label="대화 시작"
-            disabled={!canTalk}
+            disabled={false}
             onClick={() => {
               if (!canTalk) {
                 showToast("대화 기능은 Standard 이상 멤버십이 필요해요.", "info")

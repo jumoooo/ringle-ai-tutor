@@ -1,3 +1,4 @@
+import type React from "react"
 import type { Plan } from "@/types/membership"
 import type { AdminUser } from "@/features/admin/api"
 
@@ -37,13 +38,13 @@ export default function UserMembershipTable({
       >
         <thead>
           <tr style={{ backgroundColor: "var(--color-surface-subtle)" }}>
-            {["유저", "이메일", "현재 멤버십", "만료일", "부여", "삭제"].map((heading) => (
+            {(["유저", "이메일", "현재 멤버십", "만료일", "부여", "삭제"] as const).map((heading) => (
               <th
                 key={heading}
                 scope="col"
                 style={{
                   padding: "var(--space-16)",
-                  textAlign: "left",
+                  textAlign: (["현재 멤버십", "만료일", "부여"].includes(heading) ? "center" : "left") as React.CSSProperties["textAlign"],
                   color: "var(--color-text-secondary)",
                   borderBottom: "1px solid var(--color-border)"
                 }}
@@ -77,6 +78,7 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
@@ -85,6 +87,7 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   color: "var(--color-text-secondary)",
                   borderBottom: "1px solid var(--color-border)"
                 }}
@@ -96,29 +99,38 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
-                <div style={{ display: "flex", gap: "var(--space-8)", flexWrap: "wrap" }}>
-                  {paidPlans.map((plan) => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => onGrant(user.id, plan.id)}
-                      style={{
-                        minHeight: "36px",
-                        padding: "0 var(--space-12)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--radius-chip)",
-                        backgroundColor: "var(--color-surface-subtle)",
-                        color: "var(--color-text-primary)",
-                        cursor: isSubmitting ? "progress" : "pointer"
-                      }}
-                    >
-                      {plan.name}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", gap: "var(--space-8)", flexWrap: "wrap", justifyContent: "center" }}>
+                  {paidPlans.map((plan) => {
+                    const isCurrentPlan = user.membership?.plan_name === plan.name
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => onGrant(user.id, plan.id)}
+                        style={{
+                          minHeight: "36px",
+                          padding: "0 var(--space-12)",
+                          border: isCurrentPlan ? "none" : "1px solid var(--color-border)",
+                          borderRadius: "var(--radius-chip)",
+                          backgroundColor: isCurrentPlan
+                            ? "var(--color-primary)"
+                            : "var(--color-surface-subtle)",
+                          color: isCurrentPlan
+                            ? "var(--color-text-on-primary)"
+                            : "var(--color-text-primary)",
+                          cursor: isSubmitting ? "progress" : "pointer",
+                          fontWeight: isCurrentPlan ? 600 : 400
+                        }}
+                      >
+                        {plan.name}
+                      </button>
+                    )
+                  })}
                 </div>
               </td>
               <td

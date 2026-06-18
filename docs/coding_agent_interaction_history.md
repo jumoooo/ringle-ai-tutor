@@ -422,3 +422,49 @@ OpenAI API 크레딧 충전($10) 후 STT→Chat SSE→TTS 전체 파이프라인
 - StrictMode 중복 재생 제거: `isInitializingRef` + `cancelled` 이중 guard
 - flush 시 HTTP 요청 실제 취소: `AbortSignal`을 `fetchTts` axios 요청에 전달
 - 답변 완료 시 마이크 자동 off
+
+---
+
+## Phase 6 — UI 개선 (2026-06-18)
+
+**작업 형태:** Phase 5 수동 테스트 후 UX 개선 항목 직접 수정 (Claude 직접)
+
+### 작업 배경 및 목표
+
+Phase 5 버그 수정 완료 후 사용자 수동 테스트 중 발견한 UX 문제 8개를 수정한다.  
+홈 화면·어드민 화면·전역 Toast 3개 영역에 걸쳐 클릭 흐름과 피드백 일관성을 개선하는 것이 목표다.
+
+### 주요 프롬프트 예시
+
+> "대화 시작 버튼은 플랜이 없거나 basic 이어도 클릭 가능하게 하고 대신 알람 팝업으로 불가능 하다는걸 알려주는게 좋을거 같아."
+
+> "키 입력 잘못 되어도 관리화면 열기를 클릭하면 잠시 다른 화면이 빤짝 비췄다가 돌아온다. 해당 페이지 그대로 있으면서 거절 했으면 좋겠다."
+
+> "토스트가 스르륵 나왔다가 스르륵 사라졌으면 좋겠다 (선입 선출 순서로 사라지면서 한칸씩 내려옴)."
+
+### 수정 항목
+
+| # | 위치 | 문제 | 수정 내용 |
+|---|---|---|---|
+| 1 | `HomePage.tsx` | "대화 시작" `disabled={!canTalk}` → 클릭 불가, toast가 뜨지 않음 | `disabled={false}` 고정 — onClick 핸들러가 이미 toast 처리 |
+| 2 | `PlanSelector.tsx` | Basic 구매 버튼이 `color-surface-subtle` 배경으로 업그레이드 버튼과 디자인 불일치 | 구매 버튼도 `color-primary` 배경으로 통일 |
+| 3 | `AdminPage.tsx` | 잘못된 키 입력 후 "관리 화면 열기" 클릭 시 관리 화면이 flash | `isAdminLoading` 추가 — 쿼리 pending 중에는 키 입력 화면 유지 |
+| 4 | `AdminPage.tsx` | 로딩 중 버튼 상태 없음 | "관리 화면 열기" 버튼 loading 중 "확인 중..." 텍스트 + disabled |
+| 5 | `AdminPage.tsx` | "키 초기화" 클릭 후 input 필드가 초기화되지 않아 즉시 재진입 가능 | `setAdminKeyInput("")` 추가 |
+| 6 | `UserMembershipTable.tsx` | 부여 버튼이 현재 플랜과 일치해도 구분 없음 | `plan.name === user.membership?.plan_name` 비교 → `color-primary` 강조 |
+| 7 | `UserMembershipTable.tsx` | 현재 멤버십·만료일 컬럼 좌측 정렬, 부여 컬럼 헤더·내용 좌측 정렬 | 해당 컬럼 th/td 모두 `textAlign: "center"` |
+| 8 | `Toast.tsx` | 즉각 출현·소멸, 애니메이션 없음 | `toast-slide-in` / `toast-slide-out` keyframe + `exiting` 상태로 FIFO 슬라이드 애니메이션 |
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| Admin flash 해결 방식 | `!adminKey \|\| isAdminLoading` 조건으로 키 입력 화면 유지 | 별도 `isAuthenticated` 상태를 추가하면 3개 state가 필요하고 동기화 오류 위험. TanStack Query의 `isLoading`을 직접 활용하는 것이 가장 단순 |
+| Toast 애니메이션 구현 방식 | `<style>` 태그 + CSS `@keyframes` 인라인 주입 | 이 프로젝트는 CSS 모듈 미사용, Tailwind 없음. 인라인 keyframes 주입이 추가 의존성 없이 기존 스타일 패턴과 일관됨 |
+| 부여 버튼 현재 플랜 비교 기준 | `plan_name` 문자열 비교 | `AdminMembershipSchema`에 `plan_id`가 없고 `plan_name`만 노출됨. API 응답 변경 없이 프론트만으로 해결 |
+
+### 최종 결과 요약
+
+- 수정 파일: `HomePage.tsx`, `PlanSelector.tsx`, `AdminPage.tsx`, `UserMembershipTable.tsx`, `Toast.tsx` (5개)
+- `pnpm typecheck` 0 errors 확인
+- 수정 항목 8/8 완료

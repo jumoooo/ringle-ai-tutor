@@ -19,7 +19,7 @@ export default function AdminPage() {
   )
 
   const { data: plans = [] } = usePlans()
-  const { data: users = [], isError, error } = useQuery({
+  const { data: users = [], isError, isLoading: isAdminLoading, error } = useQuery({
     queryKey: ["adminUsers", adminKey],
     queryFn: fetchAdminUsers,
     enabled: adminKey.length > 0,
@@ -59,7 +59,7 @@ export default function AdminPage() {
     }
   })
 
-  if (!adminKey) {
+  if (!adminKey || isAdminLoading) {
     return (
       <Layout
         title="멤버십 관리"
@@ -107,6 +107,7 @@ export default function AdminPage() {
 
           <button
             type="button"
+            disabled={isAdminLoading}
             onClick={() => {
               if (!adminKeyInput.trim()) {
                 showToast("Admin Key를 입력해주세요.", "info")
@@ -122,10 +123,11 @@ export default function AdminPage() {
               borderRadius: "var(--radius-card)",
               backgroundColor: "var(--color-primary)",
               color: "var(--color-text-on-primary)",
-              cursor: "pointer"
+              cursor: isAdminLoading ? "progress" : "pointer",
+              opacity: isAdminLoading ? 0.7 : 1
             }}
           >
-            관리 화면 열기
+            {isAdminLoading ? "확인 중..." : "관리 화면 열기"}
           </button>
         </section>
       </Layout>
@@ -142,6 +144,7 @@ export default function AdminPage() {
           onClick={() => {
             window.sessionStorage.removeItem("adminKey")
             setAdminKey("")
+            setAdminKeyInput("")
             showToast("Admin Key를 이 탭에서 제거했어요.", "info")
           }}
           style={{
