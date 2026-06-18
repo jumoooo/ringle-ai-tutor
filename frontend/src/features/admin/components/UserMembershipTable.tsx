@@ -1,4 +1,5 @@
 import type React from "react"
+import AdminButton from "@/features/admin/components/AdminButton"
 import type { Plan } from "@/types/membership"
 import type { AdminUser } from "@/features/admin/api"
 
@@ -61,6 +62,7 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
@@ -69,6 +71,7 @@ export default function UserMembershipTable({
               <td
                 style={{
                   padding: "var(--space-16)",
+                  textAlign: "center",
                   color: "var(--color-text-secondary)",
                   borderBottom: "1px solid var(--color-border)"
                 }}
@@ -107,28 +110,14 @@ export default function UserMembershipTable({
                   {paidPlans.map((plan) => {
                     const isCurrentPlan = user.membership?.plan_name === plan.name
                     return (
-                      <button
+                      <AdminButton
                         key={plan.id}
-                        type="button"
+                        label={plan.name}
+                        variant={isCurrentPlan ? "plan-active" : "plan-inactive"}
                         disabled={isSubmitting}
+                        disabledReason={isSubmitting ? "submitting" : null}
                         onClick={() => onGrant(user.id, plan.id)}
-                        style={{
-                          minHeight: "36px",
-                          padding: "0 var(--space-12)",
-                          border: isCurrentPlan ? "none" : "1px solid var(--color-border)",
-                          borderRadius: "var(--radius-chip)",
-                          backgroundColor: isCurrentPlan
-                            ? "var(--color-primary)"
-                            : "var(--color-surface-subtle)",
-                          color: isCurrentPlan
-                            ? "var(--color-text-on-primary)"
-                            : "var(--color-text-primary)",
-                          cursor: isSubmitting ? "progress" : "pointer",
-                          fontWeight: isCurrentPlan ? 600 : 400
-                        }}
-                      >
-                        {plan.name}
-                      </button>
+                      />
                     )
                   })}
                 </div>
@@ -140,25 +129,19 @@ export default function UserMembershipTable({
                   borderBottom: "1px solid var(--color-border)"
                 }}
               >
-                <button
-                  type="button"
+                <AdminButton
+                  label="삭제"
+                  variant="danger"
                   disabled={isSubmitting || user.membership === null}
+                  disabledReason={
+                    user.membership === null
+                      ? "unavailable"
+                      : isSubmitting
+                        ? "submitting"
+                        : null
+                  }
                   onClick={() => onRevoke(user.id)}
-                  style={{
-                    minHeight: "36px",
-                    padding: "0 var(--space-12)",
-                    border: "1px solid var(--color-promo-red)",
-                    borderRadius: "var(--radius-chip)",
-                    backgroundColor: "var(--color-surface)",
-                    color: "var(--color-promo-red)",
-                    cursor:
-                      isSubmitting || user.membership === null
-                        ? "not-allowed"
-                        : "pointer"
-                  }}
-                >
-                  삭제
-                </button>
+                />
               </td>
             </tr>
           ))}
