@@ -6,8 +6,7 @@ import {
 import {
   fetchCurrentMembership,
   fetchPlans,
-  purchasePlan,
-  upgradePlan
+  purchasePlan
 } from "@/features/membership/api"
 
 export function useMembership(userId: number | null) {
@@ -30,18 +29,6 @@ export function usePurchase(userId: number | null) {
 
   return useMutation({
     mutationFn: purchasePlan,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["membership", userId] })
-      void queryClient.invalidateQueries({ queryKey: ["plans"] })
-    }
-  })
-}
-
-export function useUpgrade(userId: number | null) {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: upgradePlan,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["membership", userId] })
       void queryClient.invalidateQueries({ queryKey: ["plans"] })

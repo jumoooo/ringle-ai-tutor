@@ -8,7 +8,6 @@ export const API_ENDPOINTS = {
   plans: `${BASE_URL}/api/v1/plans`,
   membershipCurrent: `${BASE_URL}/api/v1/memberships/current`,
   membershipPurchase: `${BASE_URL}/api/v1/memberships/purchase`,
-  membershipUpgrade: `${BASE_URL}/api/v1/memberships/upgrade`,
   stt: `${BASE_URL}/api/v1/stt`,
   chat: `${BASE_URL}/api/v1/chat`,
   tts: `${BASE_URL}/api/v1/tts`,

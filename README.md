@@ -211,6 +211,17 @@ pnpm test
 | `src/utils/__tests__/audio.test.ts` | WAV 인코딩 유틸리티 |
 | `src/test/health.test.ts` | 테스트 환경 sanity check |
 
+### AI 파이프라인 실검증
+
+STT → Chat SSE → TTS 전체 파이프라인은 **OpenAI API 유료 크레딧($10)을 충전해 실환경에서 직접 검증**했습니다.
+
+- Whisper-1 STT: 영어 발화 → 영어 텍스트 정상 변환 확인
+- GPT-4o Chat SSE: 스트리밍 응답 실시간 표시 확인
+- TTS-1 nova: 문장 단위 음성 자동 재생 확인
+- 재생 버튼: Blob 캐시 hit으로 API 재호출 없이 즉시 재생 확인
+
+> 단위 테스트(RSpec)에서는 WebMock으로 OpenAI API를 격리하므로 크레딧 없이 실행 가능합니다.
+
 ### 수동 테스트 체크리스트
 
 ```

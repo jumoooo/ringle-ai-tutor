@@ -36,20 +36,3 @@ export async function purchasePlan({
 
   return MembershipSchema.parse(response.data.data.membership)
 }
-
-export async function upgradePlan({
-  planId,
-  cardData
-}: {
-  planId: number
-  cardData: CardData
-}) {
-  const response = await apiClient.post(API_ENDPOINTS.membershipUpgrade, {
-    plan_id: planId,
-    card_number: cardData.card_number,
-    expiry: cardData.expiry,
-    cvc: cardData.cvc
-  })
-
-  return MembershipSchema.parse(response.data.data.membership)
-}
