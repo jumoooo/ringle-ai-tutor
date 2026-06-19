@@ -36,6 +36,8 @@ frontend/dist/
 .harness/
 CLAUDE.md
 AGENTS.md
+docs/example/
+skills-lock.json
 
 # Rails credentials keys (CRITICAL — 절대 커밋 금지)
 config/master.key

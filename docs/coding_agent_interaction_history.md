@@ -1,7 +1,7 @@
 # AI 협업 작업 기록 (Coding Agent Interaction History)
 
 > **이 문서는 과제 제출 필수 산출물입니다.**  
-> Claude + Codex 협업의 주요 작업 과정을 Phase별 narrative로 기록합니다.  
+> Claude + Codex + Gemini CLI 협업의 주요 작업 과정을 Phase별 narrative로 기록합니다.  
 > 작성 주체: Claude (`/cm_run` 실행 시 자동 갱신)
 
 ---
@@ -1087,7 +1087,19 @@ Claude+Codex 2차 회의를 거쳐 로딩 가드, blockedFeature 단일 상태, 
 
 ![작업 시작 — 2026-06-19_plans-page-split](docs/2026-06-19_plans-page-split/2026-06-19_plans-page-split_start.png)
 
-> 완료 화면은 Final Check PASS 후 추가됩니다.
+### 완료 화면
+
+![Final Check PASS — 2026-06-19_plans-page-split](docs/2026-06-19_plans-page-split/2026-06-19_plans-page-split_done.png)
+
+### 최종 결과 요약
+
+- 수용 기준 14개 전항목 PASS: PlansPage 분리, blockedFeature 단일 상태, UpgradePromptModal featureName+onGoPlans, AdminGuard, nav 구매 항상 표시, 학습 조건부 표시
+- `PlansPage.tsx` 신규 — `/plans` 라우트, userId null 차단, 구매 성공 Toast+navigate("/")
+- `UpgradePromptModal.tsx` props 확장 — featureName, onGoPlans
+- `AdminGuard.tsx` 신규 — role=admin 전용 라우트 보호
+- `Layout.tsx` nav 개선 — 학습(canLearn), 대화(canTalk) 조건부, 구매 항상, 관리자(admin role)
+- `HomePage.tsx` 정리 — 구매 섹션 제거, blockedFeature 단일 상태, isButtonsLoading 가드
+- vitest 19 files 113 passed, typecheck PASS, 커밋 c9fe330 + 24d7a97
 
 ---
 
@@ -1130,3 +1142,66 @@ TDD(Red → Green) 방식으로 `VoiceInput.test.tsx` 신규 및 `ChatBubble.tes
 - `VoiceInput.test.tsx` 신규 — 4케이스 TDD 작성
 - `ChatBubble.test.tsx` 보정 — `audioBlobUrl`/`onReplay` 분기 포함 5케이스 보전
 - `Button.tsx`, `PaymentModal.tsx` 미변경 확인
+
+---
+
+## Phase 24 — 헤더 정렬 개선 + 스켈레톤 로딩 UI (2026-06-19)
+
+**태스크 ID:** `2026-06-19_header-align-skeleton`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_header-align-skeleton/work-order.md`
+
+### 작업 배경 및 목표
+
+사용자 피드백: 상단 nav 바(홈·학습·구매 등)가 UserDropdown(select·초기화 버튼)과 세로 정렬이 맞지 않아 "붕 떠 있어 보인다". 또한 각 페이지 로딩 상태가 단순 텍스트("로딩 중…")여서 UX가 거칠다.  
+UserDropdown의 "현재 사용자" label이 2행 구조를 만들어 전체 높이가 ~70px이 되고, nav pill(40px)과 수직 중앙 정렬이 어긋나는 것이 근본 원인.  
+label을 수평 인라인으로 배치해 UserDropdown을 단일 행(40px)으로 줄이고, 공통 Skeleton 컴포넌트로 각 페이지 로딩 UI를 교체한다.
+
+### 주요 프롬프트 예시
+
+> `상단의 홈, 학습 버튼이 있는 바가 UserDropdown, 초기화 버튼과 정렬이 되어 있으면 좋겠다. 세로 길이가 같았으면 좋겠어. 로딩 시 각 페이지마다 스켈레톤이 적용됐으면 좋겠다.`
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| "현재 사용자" label 처리 | 시각 유지 + 수평 인라인 배치 | label을 숨기지 않고 select 왼쪽에 수평으로 두어 UserDropdown을 단일 행으로 만들어 높이 40px 통일 |
+| 세로 높이 기준 | 40px (터치 타겟 최소) | NavigationLink 기존 40px 기준, 터치 타겟 최소 크기 준수 |
+| 스켈레톤 pulse 구현 | style tag 1회 주입 | 외부 라이브러리 없이 의존성 최소화, 기존 CSS variable 활용 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_header-align-skeleton](docs/2026-06-19_header-align-skeleton/2026-06-19_header-align-skeleton_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
+---
+
+## Phase 25 — 오디오 오남용 방지 (2026-06-19)
+
+**태스크 ID:** `2026-06-19_audio-abuse-prevention`  
+**handoff 파일:** `.ai/handoffs/2026-06-19_audio-abuse-prevention/work-order.md`
+
+### 작업 배경 및 목표
+
+마이크를 열어두고 긴 발화를 한 번에 전송하는 오남용 패턴을 방어하기 위해 시작되었습니다.
+기존 Rate Limit(분당 10회)은 단일 요청의 내용량을 제한하지 않아, 수 분짜리 발화 1회로 Whisper API 비용을 과도하게 유발할 수 있었습니다.
+프론트엔드에서 30초 초과 발화를 즉시 폐기하고, 백엔드에서 2MB 초과 파일을 Whisper 호출 전에 차단하는 2중 방어를 구현합니다.
+아울러 오디오·결제 파라미터의 로그 노출을 차단하는 filter_parameters 보완도 함께 진행합니다.
+
+### 주요 프롬프트 예시
+
+> "마이크를 열어두고 많은 요청을 보내는 오남용을 방지하기 위한 방법을 적용 어떤거 했니? 완성도와 안정성을 제일 중시하고 계획을 짜야해 이부분 깊게 생각해보고 계획 한번 더 수립해 본다음 그 내용으로 /cm_run 바로 진행해줘 스킬 엄중하게 지켜서 순서대로 해줘"
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| 프론트 발화 시간 제한 | 30초 | 대화 턴 여유 확보 — 정상 발화는 30초 안에 끝나고, 비용 차단과 UX 사이 균형점으로 조정 |
+| presence/size 검증 분리 | 별도 before_action | 단일 책임 원칙 — 각 검증을 독립 케이스로 테스트 가능하게 분리 |
+| error state 재사용 | 기존 error state 유지 | 인터페이스 최소화 — onSpeechStart에서 자동 초기화로 충분히 구분됨 |
+
+### 시작 화면
+
+![작업 시작 — 2026-06-19_audio-abuse-prevention](docs/2026-06-19_audio-abuse-prevention/2026-06-19_audio-abuse-prevention_start.png)
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.

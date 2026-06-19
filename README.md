@@ -5,6 +5,16 @@
 
 ---
 
+## 사용 AI
+
+| 역할 | 도구 |
+|---|---|
+| 요구사항 정리 / 계획 / 핸드오프 생성 / Final Check | Claude (claude-sonnet-4-6) |
+| 구현 / 수정 / 리팩터 / 커밋 | Codex (OpenAI) |
+| 계획 초안 외부 리뷰 | Gemini CLI |
+
+---
+
 ## 기술 스택
 
 | 영역 | 기술 |
@@ -149,8 +159,10 @@ Silero VAD legacy 모델 사용. 주요 파라미터:
 ```bash
 cd backend
 bundle exec rspec
-# 40 examples, 0 failures
+# 65 examples, 1 failure
 ```
+
+> `upgrade_service_spec.rb` 1건 실패 (기존 버그 — 과제 구현 범위 외 선행 이슈, 미수정 상태로 유지)
 
 주요 테스트 범위:
 
@@ -158,26 +170,46 @@ bundle exec rspec
 |---|---|
 | `spec/requests/api/v1/memberships_spec.rb` | 현재 멤버십 조회, 구매, 업그레이드 |
 | `spec/requests/api/v1/admin/memberships_spec.rb` | 어드민 멤버십 부여·삭제 |
-| `spec/requests/api/v1/stt_spec.rb` | STT 업로드 (WebMock으로 OpenAI 격리) |
-| `spec/requests/api/v1/chat_streams_spec.rb` | SSE 스트리밍 응답 |
-| `spec/requests/api/v1/tts_spec.rb` | TTS 음성 생성 |
+| `spec/requests/api/v1/stt_spec.rb` | STT 업로드, 오디오 미첨부·2MB 초과 검증 (WebMock으로 OpenAI 격리) |
+| `spec/requests/api/v1/chat_streams_spec.rb` | SSE 스트리밍 응답, 입력 길이 422 검증 |
+| `spec/requests/api/v1/tts_spec.rb` | TTS 음성 생성, 만료 멤버십 403 |
 | `spec/models/membership_spec.rb` | 만료 여부·세션 잔량 모델 로직 |
+| `spec/services/memberships/purchase_service_spec.rb` | 구매 서비스 |
+| `spec/services/memberships/upgrade_service_spec.rb` | 업그레이드 서비스 (기간 보존 로직) |
+| `spec/services/ai/chat_stream_service_spec.rb` | Chat 스트리밍 서비스 |
 
 ### Frontend (Vitest)
 
 ```bash
 cd frontend
 pnpm test
+# 20 test files, 119 passed
 ```
 
 주요 테스트 범위:
 
 | 파일 | 내용 |
 |---|---|
-| `src/features/tutor/components/__tests__/ChatBubble.test.tsx` | 채팅 버블 렌더링·재생 버튼 |
+| `src/features/tutor/hooks/__tests__/useVad.test.ts` | VAD 발화 시간 30초 제한 |
+| `src/features/tutor/components/__tests__/VoiceInput.test.tsx` | 마이크·답변완료 버튼 hover |
+| `src/features/tutor/components/__tests__/ChatBubble.test.tsx` | 채팅 버블 렌더링·재생 버튼 hover |
+| `src/features/tutor/components/__tests__/TurnLimitBanner.test.tsx` | 20턴 제한 배너 |
 | `src/features/membership/components/__tests__/MembershipCard.test.tsx` | 멤버십 카드 표시 |
-| `src/utils/__tests__/audio.test.ts` | WAV 인코딩 유틸리티 |
+| `src/features/membership/components/__tests__/PaymentModal.test.tsx` | 결제 모달 입력·카드번호 분할 |
+| `src/features/membership/components/__tests__/PlanSelector.test.tsx` | 플랜 선택·구매 버튼 |
+| `src/features/membership/components/__tests__/UpgradePromptModal.test.tsx` | 업그레이드 안내 팝업 |
+| `src/features/admin/components/__tests__/AdminButton.test.tsx` | 어드민 버튼 variant·hover |
+| `src/components/__tests__/Layout.test.tsx` | 네비게이션 조건부 표시 |
+| `src/components/__tests__/UserDropdown.test.tsx` | 유저 선택 드롭다운 |
+| `src/components/__tests__/AdminGuard.test.tsx` | admin role 라우트 보호 |
+| `src/components/ui/__tests__/Button.test.tsx` | 공용 Button 컴포넌트 |
+| `src/pages/__tests__/HomePage.test.tsx` | 홈 화면 멤버십·모달 흐름 |
+| `src/pages/__tests__/PlansPage.test.tsx` | 플랜 구매 페이지 |
+| `src/pages/__tests__/AdminPage.test.tsx` | 어드민 캐시 무효화 |
 | `src/hooks/__tests__/useCurrentUser.test.ts` | 유저 선택 훅 |
+| `src/hooks/__tests__/useCurrentUserProfile.test.ts` | 유저 프로필 훅 |
+| `src/utils/__tests__/audio.test.ts` | WAV 인코딩 유틸리티 |
+| `src/test/health.test.ts` | 테스트 환경 sanity check |
 
 ### 수동 테스트 체크리스트
 
