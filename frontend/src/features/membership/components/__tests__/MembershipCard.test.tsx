@@ -34,6 +34,6 @@ describe("MembershipCard", () => {
   it("로딩 상태를 표시해요", () => {
     render(<MembershipCard membership={undefined} isLoading />)
 
-    expect(screen.getByText(/로딩 중/)).toBeInTheDocument()
+    expect(screen.getAllByTestId("skeleton-block").length).toBeGreaterThan(0)
   })
 })

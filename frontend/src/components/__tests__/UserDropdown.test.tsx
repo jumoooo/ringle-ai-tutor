@@ -66,4 +66,30 @@ describe("UserDropdown", () => {
 
     expect(screen.getByRole("button", { name: "초기화" })).toBeEnabled()
   })
+
+  it("select의 minHeight이 40px예요", () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      userId: null,
+      selectUser: vi.fn(),
+      clearUser: vi.fn()
+    } as unknown as ReturnType<typeof useCurrentUser>)
+
+    render(<UserDropdown />, { wrapper: makeWrapper() })
+
+    const select = screen.getByRole("combobox")
+    expect(select).toHaveStyle({ minHeight: "40px" })
+  })
+
+  it("초기화 버튼의 minHeight이 40px예요", () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      userId: null,
+      selectUser: vi.fn(),
+      clearUser: vi.fn()
+    } as unknown as ReturnType<typeof useCurrentUser>)
+
+    render(<UserDropdown />, { wrapper: makeWrapper() })
+
+    const button = screen.getByRole("button", { name: "초기화" })
+    expect(button).toHaveStyle({ minHeight: "40px" })
+  })
 })

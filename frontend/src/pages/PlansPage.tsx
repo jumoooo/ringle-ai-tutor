@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
+import { SkeletonBlock } from "@/components/ui/Skeleton"
 import PaymentModal from "@/features/membership/components/PaymentModal"
 import PlanSelector from "@/features/membership/components/PlanSelector"
 import {
@@ -41,13 +42,17 @@ export default function PlansPage() {
         ) : isPlansLoading ? (
           <section
             style={{
+              display: "grid",
+              gap: "var(--space-16)",
               padding: "var(--space-20)",
               borderRadius: "var(--radius-card)",
               backgroundColor: "var(--color-surface)",
               border: "1px solid var(--color-border)"
             }}
           >
-            플랜 목록을 불러오는 중이에요.
+            <SkeletonBlock width="160px" height="28px" />
+            <SkeletonBlock width="100%" height="80px" />
+            <SkeletonBlock width="100%" height="80px" />
           </section>
         ) : (
           <PlanSelector

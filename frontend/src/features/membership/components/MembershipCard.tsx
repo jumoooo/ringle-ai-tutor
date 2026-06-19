@@ -1,3 +1,4 @@
+import { SkeletonBlock } from "@/components/ui/Skeleton"
 import type { Membership } from "@/types/membership"
 
 interface MembershipCardProps {
@@ -25,6 +26,8 @@ export default function MembershipCard({
     return (
       <section
         style={{
+          display: "grid",
+          gap: "var(--space-12)",
           padding: "var(--space-24)",
           borderRadius: "var(--radius-card)",
           backgroundColor: "var(--color-surface)",
@@ -32,7 +35,9 @@ export default function MembershipCard({
           boxShadow: "var(--shadow-card)"
         }}
       >
-        로딩 중...
+        <SkeletonBlock width="60px" height="24px" />
+        <SkeletonBlock width="200px" height="32px" />
+        <SkeletonBlock width="140px" height="18px" />
       </section>
     )
   }

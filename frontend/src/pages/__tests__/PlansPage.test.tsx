@@ -104,6 +104,31 @@ describe("PlansPage", () => {
     mockShowToast.mockReset()
   })
 
+  it("플랜 로딩 중에 스켈레톤을 표시해요", () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      userId: 1,
+      selectUser: vi.fn(),
+      clearUser: vi.fn()
+    })
+    vi.mocked(useMembership).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      refetch: vi.fn()
+    } as unknown as ReturnType<typeof useMembership>)
+    vi.mocked(usePlans).mockReturnValue({
+      data: undefined,
+      isLoading: true
+    } as unknown as ReturnType<typeof usePlans>)
+    vi.mocked(usePurchase).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof usePurchase>)
+
+    render(<PlansPage />, { wrapper: makeWrapper() })
+
+    expect(screen.getAllByTestId("skeleton-block").length).toBeGreaterThan(0)
+  })
+
   it("userId가 null이면 plan-card가 렌더되지 않아요", () => {
     setupMocks({ userId: null, membership: null })
     render(<PlansPage />, { wrapper: makeWrapper() })

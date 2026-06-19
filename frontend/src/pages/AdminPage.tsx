@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
+import { SkeletonBlock } from "@/components/ui/Skeleton"
 import {
   fetchAdminUsers,
   grantMembership,
@@ -53,7 +54,11 @@ export default function AdminPage() {
         title="멤버십 관리"
         description="유저별 멤버십 상태를 확인하는 중이에요."
       >
-        <section>로딩 중...</section>
+        <section style={{ display: "grid", gap: "var(--space-12)" }}>
+          <SkeletonBlock width="100%" height="40px" />
+          <SkeletonBlock width="100%" height="40px" />
+          <SkeletonBlock width="100%" height="40px" />
+        </section>
       </Layout>
     )
   }
