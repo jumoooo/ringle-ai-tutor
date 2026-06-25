@@ -36,7 +36,7 @@ RSpec.describe Memberships::UpgradeService, type: :service do
         .and change(Membership, :count).by(0)
 
       current_membership.reload
-      payment_log = PaymentLog.order(:created_at).last
+      payment_log = PaymentLog.find_by!(transaction_id: transaction_id)
 
       aggregate_failures do
         expect(current_membership.plan).to eq(premium_plan)

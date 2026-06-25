@@ -14,6 +14,17 @@ vi.mock("@/features/membership/hooks/useMembership", () => ({
   usePurchase: vi.fn()
 }))
 
+vi.mock("@/hooks/useCurrentUserProfile", () => ({
+  useCurrentUserProfile: () => ({
+    data: { role: null },
+    isLoading: false
+  })
+}))
+
+vi.mock("@/components/UserDropdown", () => ({
+  default: () => <div data-testid="user-dropdown" />
+}))
+
 const mockShowToast = vi.fn()
 vi.mock("@/components/Toast", () => ({
   useToast: () => ({ showToast: mockShowToast }),
