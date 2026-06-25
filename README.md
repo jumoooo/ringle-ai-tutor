@@ -48,7 +48,6 @@
 OPENAI_API_KEY=sk-...          # 필수 — STT·Chat·TTS 전체 파이프라인에 사용
 DATABASE_URL=                  # 생략 시 config/database.yml 기본값 사용
 CORS_ORIGIN=http://localhost:5173
-ADMIN_KEY=your-admin-key       # 어드민 API 접근 키 (기본값: dev-admin-key)
 ```
 
 **Frontend** (`frontend/.env` 파일 생성):
@@ -67,7 +66,7 @@ rails server
 # → http://localhost:3000
 ```
 
-`db:seed`로 샘플 유저 3명과 Plan 3종(Basic·Standard·Premium)이 생성됩니다.
+`db:seed`로 샘플 유저 3명과 Plan 3종(무료·베이직·프리미엄 플러스)이 생성됩니다.
 
 ### 3. Frontend 실행
 
@@ -81,8 +80,8 @@ pnpm dev
 ### 4. 사용 흐름
 
 1. **홈(`/`)** — 유저 선택 후 멤버십 현황 확인 및 플랜 구매
-2. **어드민(`/admin`)** — `ADMIN_KEY` 입력 후 유저에게 멤버십 강제 부여·삭제
-3. **대화(`/chat`)** — Standard 이상 멤버십 보유 시 AI 튜터와 영어 음성 대화
+2. **어드민(`/admin`)** — 유저 선택 화면에서 **Alice Kim** 계정 선택 시 어드민 접근 (role 기반)
+3. **대화(`/chat`)** — 프리미엄 플러스 멤버십 보유 시 AI 튜터와 영어 음성 대화
 
 > 브라우저 마이크 권한은 Chrome 설정(`chrome://settings/content/microphone`)에서 `localhost:5173`을 허용해주세요.
 
@@ -93,7 +92,7 @@ pnpm dev
 ### 멤버십 도메인
 
 `Plan` (학습·대화·분석 권한 정의) + `Membership` (유저별 상태·만료일·잔여 세션) 두 모델로 분리했습니다.  
-기능 접근 판단은 `membership.active? && plan.can_talk && sessions_remaining?` 세 조건의 AND로 처리해, 단순 결제 여부만 보지 않고 기한과 세션 잔량까지 함께 검사합니다.  
+기능 접근 판단은 `membership.active? && plan.can_talk && sessions_remaining?` 세 조건의 AND로 처리합니다. 현재 세션 수 제한은 없으며 `total_sessions`가 `nil`이면 무제한으로 취급합니다.  
 결제는 실 PG사 연동 없이 `MockPaymentService`가 항상 성공 응답을 반환하며, 결제 로그는 `payment_logs` 테이블에 기록합니다.
 
 ### AI 파이프라인 분리 원칙
@@ -145,7 +144,7 @@ Silero VAD legacy 모델 사용. 주요 파라미터:
 |---|---|
 | 인증 | 없음 — `X-User-Id` 헤더로 유저 구분 (과제 명시 제외) |
 | 대화 세션 관리 | `localStorage` + `GET /conversations/:id`로 새로고침 복원 지원 |
-| 어드민 인증 | `ADMIN_KEY` 헤더 검사 (단순 API key 방식) |
+| 어드민 인증 | `user.role == "admin"` 기반 — seed 데이터의 Alice Kim 계정이 어드민 (과제 단순화) |
 | STT 언어 | `language: "en"` 고정 (영어 튜터이므로) |
 | TTS 음성 | `nova` 모델 (자연스러운 영어 발화에 적합) |
 | Chat 모델 | `gpt-4o` (대화 맥락 유지 및 교육적 응답 품질) |
@@ -159,10 +158,8 @@ Silero VAD legacy 모델 사용. 주요 파라미터:
 ```bash
 cd backend
 bundle exec rspec
-# 65 examples, 1 failure
+# 65 examples, 0 failures
 ```
-
-> `upgrade_service_spec.rb` 1건 실패 (기존 버그 — 과제 구현 범위 외 선행 이슈, 미수정 상태로 유지)
 
 주요 테스트 범위:
 
@@ -226,9 +223,9 @@ STT → Chat SSE → TTS 전체 파이프라인은 **OpenAI API 유료 크레딧
 
 ```
 [ ] 홈: 유저 선택 → 멤버십 없음 표시 확인
-[ ] 홈: 플랜 구매 → Standard 멤버십 활성화
-[ ] 어드민: ADMIN_KEY 입력 → 유저에게 멤버십 부여
-[ ] 대화: Standard 미만 멤버십으로 /chat 접근 시 홈 리다이렉트
+[ ] 홈: 플랜 구매 → 프리미엄 플러스 멤버십 활성화
+[ ] 어드민: Alice Kim 선택 → /admin 접근 → 유저에게 멤버십 부여
+[ ] 대화: 프리미엄 플러스 미만 멤버십으로 /chat 접근 시 홈 리다이렉트
 [ ] 대화: 마이크 켜기 → 권한 팝업 → 파형 표시 확인
 [ ] 대화: 영어로 발화 → 답변 완료 → 영어 텍스트 변환 확인
 [ ] 대화: AI 응답 SSE 스트리밍 → TTS 자동 재생 확인
