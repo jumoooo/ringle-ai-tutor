@@ -17,4 +17,11 @@ class Membership < ApplicationRecord
   def expired?
     !active?
   end
+
+  def sessions_remaining?
+    total_sessions = self[:total_sessions]
+    used_sessions = self[:used_sessions]
+
+    total_sessions.nil? || used_sessions.to_i < total_sessions
+  end
 end
