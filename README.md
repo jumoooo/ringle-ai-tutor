@@ -1,6 +1,6 @@
-# Ringle AI Tutor
+# JM AI Tutor
 
-영어 회화 AI 튜터 풀스택 과제 구현물입니다.  
+영어 회화 AI 튜터 풀스택 프로젝트입니다.  
 멤버십 기반 접근 제어 + 실시간 음성 대화(VAD → STT → Chat SSE → TTS) 파이프라인을 포함합니다.
 
 ---
@@ -142,9 +142,9 @@ Silero VAD legacy 모델 사용. 주요 파라미터:
 
 | 항목 | 처리 방식 |
 |---|---|
-| 인증 | 없음 — `X-User-Id` 헤더로 유저 구분 (과제 명시 제외) |
+| 인증 | 없음 — `X-User-Id` 헤더로 유저 구분 (스코프상 제외) |
 | 대화 세션 관리 | `localStorage` + `GET /conversations/:id`로 새로고침 복원 지원 |
-| 어드민 인증 | `user.role == "admin"` 기반 — seed 데이터의 Alice Kim 계정이 어드민 (과제 단순화) |
+| 어드민 인증 | `user.role == "admin"` 기반 — seed 데이터의 Alice Kim 계정이 어드민 (초기 버전 단순화) |
 | STT 언어 | `language: "en"` 고정 (영어 튜터이므로) |
 | TTS 음성 | `nova` 모델 (자연스러운 영어 발화에 적합) |
 | Chat 모델 | `gpt-4o` (대화 맥락 유지 및 교육적 응답 품질) |
