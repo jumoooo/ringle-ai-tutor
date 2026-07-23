@@ -239,6 +239,13 @@ export default function ChatPage() {
       return
     }
 
+    // setTimeout은 32비트 정수 한계(~24.8일)를 초과하면 즉시 실행됨
+    // 그 이상 남은 멤버십은 페이지 재방문 시 처리되므로 타이머 불필요
+    const MAX_TIMEOUT_MS = 2_147_483_647
+    if (remainingTime > MAX_TIMEOUT_MS) {
+      return
+    }
+
     const timerId = window.setTimeout(() => {
       setIsInputDisabled(true)
       showToast("멤버십이 만료되었습니다. 홈에서 플랜을 구매하세요.", "info")
