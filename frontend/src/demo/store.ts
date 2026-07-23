@@ -1,5 +1,11 @@
 export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true"
 
+export const DEMO_AI_DISABLED_MESSAGE =
+  "이 데모에서는 AI 음성 대화 기능을 제공하지 않아요."
+
+export const DEMO_TUTOR_FIRST_MESSAGE =
+  "Hi! What would you like to talk about today?"
+
 interface DemoUser {
   id: number
   name: string
