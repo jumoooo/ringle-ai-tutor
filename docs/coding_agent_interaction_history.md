@@ -1204,4 +1204,31 @@ label을 수평 인라인으로 배치해 UserDropdown을 단일 행(40px)으로
 
 ![작업 시작 — 2026-06-19_audio-abuse-prevention](docs/2026-06-19_audio-abuse-prevention/2026-06-19_audio-abuse-prevention_start.png)
 
+---
+
+## Phase 26 — 테스트 수정: RSpec 0 failures + Vitest stderr 제거 (2026-06-24)
+
+**태스크 ID:** `2026-06-24_test-fix-rspec-vitest`  
+**handoff 파일:** `.ai/handoffs/2026-06-24_test-fix-rspec-vitest/work-order.md`
+
+### 작업 배경 및 목표
+
+재제출 준비 과정에서 두 가지 테스트 품질 문제가 확인됐다.  
+`bundle exec rspec` 65 examples 중 1건 실패 (`Memberships::UpgradeService` 핵심 도메인 spec)와  
+`pnpm vitest run` 통과 중 stderr `AggregateError` 반복 출력 문제를 수정한다.  
+두 문제 모두 평가자가 직접 실행 시 제출 완성도 신뢰도에 타격을 주는 항목이다.
+
+### 주요 프롬프트 예시
+
+> 재제출 준비 — Task 2+3: upgrade_service_spec.rb 수정(RSpec 0 failures) + HomePage/PlansPage 테스트 mock 정리(vitest stderr AggregateError 제거)
+
+### 설계 결정 이유
+
+| 결정 항목 | 선택 | 이유 |
+|---|---|---|
+| RSpec 수정 방향 | 원인 파악 후 결정 | 실제 실패 메시지를 먼저 확인한 뒤 spec vs 서비스 중 어느 쪽을 수정할지 판단 |
+| Vitest mock 추가 범위 | 전체 스캔 후 수정 | AggregateError 발생 파일이 두 곳 이상일 수 있어 전체 stderr 확인 후 일괄 수정 |
+
+> 완료 화면은 Final Check PASS 후 추가됩니다.
+
 > 완료 화면은 Final Check PASS 후 추가됩니다.
