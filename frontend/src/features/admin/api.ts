@@ -1,6 +1,12 @@
 import { z } from "zod"
 import { apiClient } from "@/api/client"
 import { API_ENDPOINTS } from "@/config/api"
+import {
+  DEMO_MODE,
+  grantDemoMembership,
+  listDemoAdminUsers,
+  revokeDemoMembership
+} from "@/demo/store"
 
 const AdminMembershipSchema = z.object({
   status: z.string(),
@@ -32,6 +38,10 @@ const AdminGrantResponseSchema = z.object({
 export type AdminUser = z.infer<typeof AdminUserSchema>
 
 export async function fetchAdminUsers() {
+  if (DEMO_MODE) {
+    return listDemoAdminUsers()
+  }
+
   const response = await apiClient.get(API_ENDPOINTS.adminUsers)
   return AdminUserArraySchema.parse(response.data.data)
 }
@@ -41,6 +51,18 @@ export async function grantMembership(
   planId: number,
   durationDays: number
 ) {
+  if (DEMO_MODE) {
+    const membership = grantDemoMembership(userId, planId, durationDays)
+    return {
+      membership: {
+        id: membership.id,
+        status: membership.status,
+        expires_at: membership.expires_at,
+        plan: { id: membership.plan.id, name: membership.plan.name }
+      }
+    }
+  }
+
   const response = await apiClient.post(
     `${API_ENDPOINTS.adminUsers}/${userId}/memberships`,
     {
@@ -53,6 +75,11 @@ export async function grantMembership(
 }
 
 export async function revokeMembership(userId: number) {
+  if (DEMO_MODE) {
+    revokeDemoMembership(userId)
+    return { revoked: true }
+  }
+
   const response = await apiClient.delete(
     `${API_ENDPOINTS.adminUsers}/${userId}/memberships/current`
   )

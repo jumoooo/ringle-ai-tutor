@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import Layout from "@/components/Layout"
 import { useToast } from "@/components/Toast"
 import { SkeletonBlock } from "@/components/ui/Skeleton"
+import { DEMO_MODE } from "@/demo/store"
 import { useMembership } from "@/features/membership/hooks/useMembership"
 import {
   createConversation,
@@ -52,6 +53,7 @@ export default function ChatPage() {
   const { enqueue: enqueueTts, flush: flushTts, replayAll } = useTtsQueue(handleTtsError)
 
   const initializeConversation = useCallback(async () => {
+    if (DEMO_MODE) return
     if (isInitializingRef.current) return
     isInitializingRef.current = true
 
@@ -227,6 +229,7 @@ export default function ChatPage() {
   }, [membership?.expires_at, showToast])
 
   useEffect(() => {
+    if (DEMO_MODE) return
     if (!userId || !membership?.plan.can_talk) {
       return
     }
@@ -289,6 +292,33 @@ export default function ChatPage() {
           <SkeletonBlock width="200px" height="28px" />
           <SkeletonBlock width="100%" height="120px" />
         </div>
+      </Layout>
+    )
+  }
+
+  if (DEMO_MODE) {
+    return (
+      <Layout
+        title="AI 튜터 대화"
+        description="이 데모에서는 실시간 AI 음성 대화 기능이 비활성화되어 있어요."
+      >
+        <section
+          style={{
+            display: "grid",
+            gap: "var(--space-12)",
+            padding: "var(--space-24)",
+            borderRadius: "var(--radius-card)",
+            backgroundColor: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "var(--shadow-card)"
+          }}
+        >
+          <strong>음성 인식·대화·음성합성(AI) 기능은 데모 환경에서 비활성화되어 있어요.</strong>
+          <span style={{ color: "var(--color-text-secondary)" }}>
+            외부 AI API 호출 비용을 피하기 위해 이 화면에서는 실제 대화가 진행되지 않아요.
+            멤버십·결제·관리자 기능은 이 데모에서도 정상적으로 동작합니다.
+          </span>
+        </section>
       </Layout>
     )
   }

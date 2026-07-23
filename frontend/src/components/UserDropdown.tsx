@@ -2,10 +2,15 @@ import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/api/client"
 import Button from "@/components/ui/Button"
 import { API_ENDPOINTS } from "@/config/api"
+import { DEMO_MODE, getDemoUsers } from "@/demo/store"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { UserArraySchema } from "@/types/user"
 
 async function fetchUsers() {
+  if (DEMO_MODE) {
+    return getDemoUsers().map(({ id, name, email }) => ({ id, name, email }))
+  }
+
   const response = await apiClient.get(API_ENDPOINTS.users)
   return UserArraySchema.parse(response.data.data)
 }
