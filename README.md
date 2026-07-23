@@ -3,6 +3,10 @@
 영어 회화 AI 튜터 풀스택 프로젝트입니다.  
 멤버십 기반 접근 제어 + 실시간 음성 대화(VAD → STT → Chat SSE → TTS) 파이프라인을 포함합니다.
 
+## 시연 영상
+
+https://github.com/user-attachments/assets/69f10a42-1b3c-4664-a97c-e636666d887a
+
 ---
 
 ## 사용 AI
