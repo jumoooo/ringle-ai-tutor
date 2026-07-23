@@ -23,7 +23,7 @@
 
 | 결정 항목 | 결정 내용 | 상세 |
 |---|---|---|
-| 인증 방식 | X-User-Id 헤더 | 실제 JWT 없음 (과제 제외) |
+| 인증 방식 | X-User-Id 헤더 | 실제 JWT 없음 (구현 범위 제외) |
 | 유저 선택 방법 | 홈 화면 드롭다운 | 미리 생성된 유저 seed 목록에서 선택 |
 | 상태 저장 | localStorage | 새로고침 후에도 선택 유지 |
 | conversation_id 저장 | localStorage | 마지막 conversation_id를 저장. 새로고침 시 복원 |
@@ -44,7 +44,7 @@
 | 결정 항목 | 결정 내용 | 상세 |
 |---|---|---|
 | 만료 판단 기준 | expires_at < Time.current 단일 기준 | 세션 횟수 없음 |
-| total_sessions / used_sessions | **제거됨** | 복잡도 대비 과제 요구사항 불명확 |
+| total_sessions / used_sessions | **제거됨** | 복잡도 대비 요구사항 불명확 |
 | 재구매 동작 | 기간 연장 | `expires_at += plan.duration_days.days` |
 | 업그레이드 동작 | 남은 기간 이어받기 | `new_expires_at = [old_expires_at, Time.current].max + plan.duration_days.days` |
 | 어드민 삭제 후 | 다음 API 호출 시 403 반환 | 실시간 즉시 차단 |
@@ -129,7 +129,7 @@ membership.active? && membership.plan.can_talk
 
 | 결정 항목 | 결정 내용 |
 |---|---|
-| 디자인 레퍼런스 | Ringle 앱 유사 (디자인 별도 제공 예정) |
+| 디자인 레퍼런스 | 참고 앱 유사 (디자인 별도 제공 예정) |
 | 반응형 | 필수 (모바일/데스크탑) |
 | Waveform | Web Audio API AnalyserNode 기반 시각화 |
 | 메시지 시간 | HH:MM 포맷 |

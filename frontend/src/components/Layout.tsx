@@ -119,7 +119,7 @@ export default function Layout({
                 marginBottom: "var(--space-4)"
               }}
             >
-              Ringle AI Tutor
+              JM AI Tutor
             </div>
             <div
               style={{

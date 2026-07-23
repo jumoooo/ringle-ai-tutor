@@ -1,6 +1,6 @@
 # AI 협업 작업 기록 (Coding Agent Interaction History)
 
-> **이 문서는 과제 제출 필수 산출물입니다.**  
+> **이 문서는 AI 협업 개발 과정을 기록한 문서입니다.**  
 > Claude + Codex + Gemini CLI 협업의 주요 작업 과정을 Phase별 narrative로 기록합니다.  
 > 작성 주체: Claude (`/cm_run` 실행 시 자동 갱신)
 
@@ -20,19 +20,19 @@
 
 ## Phase — Claude + Codex 하네스 부트스트랩 (2026-06-16)
 
-**태스크 ID:** `ringle-ai-tutor-bootstrap`  
-**handoff 파일:** `.ai/handoffs/2026-06-16_ringle-ai-tutor-bootstrap/work-order.md`  
+**태스크 ID:** `jm-ai-tutor-bootstrap`  
+**handoff 파일:** `.ai/handoffs/2026-06-16_jm-ai-tutor-bootstrap/work-order.md`  
 **상태:** completed
 
 ### 작업 배경 및 목표
 
-신규 `ringle-ai-tutor` 저장소에 Claude + Codex 멀티 LLM 하네스를 처음부터 설치하는 Phase 0 작업이다.
+신규 `jm-ai-tutor` 저장소에 Claude + Codex 멀티 LLM 하네스를 처음부터 설치하는 Phase 0 작업이다.
 이전 프로젝트(서버-펄스, Next.js 기반)의 잔재를 이식하지 않고, 단일 저장소 Rails API + React/Vite 기준으로 완전히 재구성하는 것이 목표였다.
 Phase 0 범위는 구조·콘텐츠·기능·프로토콜·보안 5개 1차 게이트(A~E) 검증까지였다.
 
 ### 주요 프롬프트 예시
 
-> "신규 ringle-ai-tutor 저장소에 Claude + Codex 멀티 LLM 하네스를 설치해줘."  
+> "신규 jm-ai-tutor 저장소에 Claude + Codex 멀티 LLM 하네스를 설치해줘."  
 > — 이전 프로젝트 에셋 미이식, 단일 저장소 기준으로만 재구성 요청
 
 ### 설계 결정 이유
@@ -82,7 +82,7 @@ Ruby 3.3.11, PostgreSQL 16.14, Node v22.21.0, pnpm v10.26.1은 이미 설치된 
 |---|---|---|
 | AppConfig 초기화 계층 | `config/initializers/app_config.rb` | CLAUDE.md §2-1: 컨트롤러 등 애플리케이션 코드는 직접 ENV 접근 금지 |
 | ApplicationController 전역 rescue_from | `rescue_from` 두 개만 | CLAUDE.md §2-5: 각 액션에 begin/rescue 반복 금지, 전역 처리 집중 |
-| X-User-Id 헤더 인증 | `set_current_user` before_action | 과제 조건: 실인증 없이 헤더로 사용자 구분 |
+| X-User-Id 헤더 인증 | `set_current_user` before_action | 요구 조건: 실인증 없이 헤더로 사용자 구분 |
 | Health check 응답 형식 | `{ data: { status, timestamp, version } }` | CLAUDE.md §2-6: 성공 응답은 `{ data: ... }` 형식 통일 |
 | 프론트 환경변수 | `src/config/api.ts` 단일 파일 경유 | CLAUDE.md §4-2: 컴포넌트에서 `import.meta.env` 직접 읽기 금지 |
 
@@ -109,7 +109,7 @@ Ruby 3.3.11, PostgreSQL 16.14, Node v22.21.0, pnpm v10.26.1은 이미 설치된 
 
 ### 작업 배경 및 목표
 
-실제 링글 앱 스크린샷 11장과 구매 페이지를 분석해 도출한 `docs/example/design-spec/design-spec.md`의 디자인 토큰을 CSS 변수로 프로젝트에 녹이는 작업이다.
+실제 서비스 앱 스크린샷 11장과 구매 페이지를 분석해 도출한 `docs/example/design-spec/design-spec.md`의 디자인 토큰을 CSS 변수로 프로젝트에 녹이는 작업이다.
 컴포넌트 구현은 이번 범위가 아니며, 환경 설정(tokens.css + Pretendard 폰트 + 에이전트 경계 설정)만 수행했다.
 이후 모든 UI 작업은 `design` 에이전트가 전담하도록 경계를 설정하는 것이 핵심 목표였다.
 
@@ -123,7 +123,7 @@ Ruby 3.3.11, PostgreSQL 16.14, Node v22.21.0, pnpm v10.26.1은 이미 설치된 
 | 결정 항목 | 선택 | 이유 |
 |---|---|---|
 | `tokens.css` 별도 파일 분리 | `frontend/src/styles/tokens.css` | index.css와 토큰 정의를 섞으면 에이전트 경계가 모호해짐. import 순서 보장도 필요 |
-| Pretendard 폰트 패키지 | `@fontsource/pretendard` | CDN 의존 없이 번들에 폰트 내장. 실제 링글 앱 폰트 패밀리와 일치 |
+| Pretendard 폰트 패키지 | `@fontsource/pretendard` | CDN 의존 없이 번들에 폰트 내장. 실제 서비스 앱 폰트 패밀리와 일치 |
 | `fab-size-vad-max` 제외 | JS 상수로 처리 | 동적 scale 값은 CSS 변수가 아니라 컴포넌트 로직에서 계산해야 함 |
 | `design.toml` 에이전트 생성 | `allowed_paths` prefix 기반 | `frontend/src/styles/**`, `frontend/src/components/ui/**` 전담. 컴포넌트 직접 생성 전 보고 의무화 |
 | `frontend_orchestrator.toml` 경계 추가 | `style_boundary` 필드 명시 | 오케스트레이터가 design 에이전트 담당 경로를 건드리지 않도록 read-only / write 구분 명시 |
@@ -269,8 +269,8 @@ OpenAI 키 없이 순수 Rails + PostgreSQL만으로 완성 가능한 범위다.
 
 | 결정 항목 | 선택 | 이유 |
 |---|---|---|
-| 만료 판단 기준 | expires_at 단일 기준 | 복잡도 제거 — 횟수+기간 이중 기준은 엣지케이스가 많고 과제 요구사항에 명시되지 않음 |
-| 어드민 보호 방식 | X-Admin-Key 헤더 | 프론트 연동 편의 — React Axios 인터셉터로 쉽게 처리 가능. 과제에서 인증 제외 범위 |
+| 만료 판단 기준 | expires_at 단일 기준 | 복잡도 제거 — 횟수+기간 이중 기준은 엣지케이스가 많고 요구사항에 명시되지 않음 |
+| 어드민 보호 방식 | X-Admin-Key 헤더 | 프론트 연동 편의 — React Axios 인터셉터로 쉽게 처리 가능. 인증 제외 범위 |
 | 멤버십 없음 응답 | 200 + data:null | 프론트 처리 편의 — 404는 에러 핸들러로 튀지만, 없음은 정상 상태이므로 200으로 통일 |
 
 ### 시작 화면
@@ -334,10 +334,10 @@ Rate Limit(Rack::Attack), 재시도 정책(retryable), 멤버십 can_talk 체크
 
 ### 작업 배경 및 목표
 
-Phase 1~3에서 Rails 백엔드 전체(멤버십, AI 파이프라인)가 완성됐고, 이제 과제 평가 핵심인 프론트엔드를 구현하는 단계다.  
+Phase 1~3에서 Rails 백엔드 전체(멤버십, AI 파이프라인)가 완성됐고, 이제 핵심인 프론트엔드를 구현하는 단계다.  
 React 18 + TypeScript + Vite로 홈(`/`), 대화(`/chat`), 어드민(`/admin`), 학습stub(`/learn`) 4개 화면을 완성한다.  
 VAD + Waveform + SSE 스트리밍 + TTS 큐 전체 파이프라인을 브라우저에서 연결하는 것이 핵심 목표다.  
-"유저 관점의 제품 완성도 최우선"이라는 과제 기준을 충족해야 한다.
+"유저 관점의 제품 완성도 최우선"이라는 기준을 충족해야 한다.
 
 ### 주요 프롬프트 예시
 
@@ -497,7 +497,7 @@ Phase 1~6에서 AI 파이프라인·멤버십·프론트엔드 기능 구현이 
 |---|---|---|
 | SSE connection timeout 제거 | timeout 미추가 | `Message.create!`가 AI 호출 전에 실행되므로, SSE 재시도 시 중복 메시지 생성 위험. 정상 요청도 첫 바이트 전에 timeout 오탐 가능 |
 | axios timeout 30s → 15s | `15_000`ms | 2026-06 현업 기준 일반 REST API는 10~15s가 표준. 30s는 대용량 보고서 생성 등 heavy operation용. chat은 fetch 기반이므로 미적용 |
-| idempotency key 미구현 | 과제 범위 제외 | 기존 `useChatStream.ts` 3회 재시도와 `Message.create!` 중복 위험이 공존하지만, idempotency key 구현은 과제 범위를 초과함. "인지된 한계"로 명시 |
+| idempotency key 미구현 | 구현 범위 제외 | 기존 `useChatStream.ts` 3회 재시도와 `Message.create!` 중복 위험이 공존하지만, idempotency key 구현은 이번 범위를 초과함. "인지된 한계"로 명시 |
 
 ### 시작 화면
 
@@ -529,20 +529,20 @@ Phase 1~6에서 AI 파이프라인·멤버십·프론트엔드 기능 구현이 
 
 ### 작업 배경 및 목표
 
-과제 원문에 "유저가 대화 화면에 접속하기 전에 멤버십의 존재 여부를 판단합니다."라고 명시되어 있으나, 기존 `ChatPage.tsx`는 `useMembership` 로딩 중(`membership === undefined`)일 때 체크를 건너뛰어 대화 화면이 일시적으로 렌더링되는 문제가 있었다.  
+요구사항 원문에 "유저가 대화 화면에 접속하기 전에 멤버십의 존재 여부를 판단합니다."라고 명시되어 있으나, 기존 `ChatPage.tsx`는 `useMembership` 로딩 중(`membership === undefined`)일 때 체크를 건너뛰어 대화 화면이 일시적으로 렌더링되는 문제가 있었다.  
 `isMembershipLoading` 상태를 활용해 로딩 중에는 판단을 유예하고, 로딩 완료 후 멤버십이 없거나 권한이 없으면 홈으로 redirect하도록 수정한다.
 
 ### 주요 프롬프트 예시
 
-> "과제 원문 기준 최종 대조 결과 — ChatPage 진입 전 로딩 가드 없음이 미흡 항목으로 확인됨. 1 하고 /cm_run 해줘"
+> "요구사항 원문 기준 최종 대조 결과 — ChatPage 진입 전 로딩 가드 없음이 미흡 항목으로 확인됨. 1 하고 /cm_run 해줘"
 
 ### 설계 결정 이유
 
 | 결정 항목 | 선택 | 이유 |
 |---|---|---|
-| `isMembershipLoading` 조건 추가 | useEffect 첫 줄 guard | 로딩 중과 데이터 없음을 구분해야 과제 요건(접속 전 판단) 충족 가능 |
+| `isMembershipLoading` 조건 추가 | useEffect 첫 줄 guard | 로딩 중과 데이터 없음을 구분해야 요건(접속 전 판단) 충족 가능 |
 | `!membership OR status 불일치` OR 조합 | 단일 if 조건 | 별도 if 블록 없이 중복 navigate 없이 간결하게 처리 가능 |
-| 로딩 스피너 UI 추가 안 함 | 기존 Layout 유지 | 변경 최소화 원칙 — redirect 타이밍 수정만으로 과제 요건 충족 |
+| 로딩 스피너 UI 추가 안 함 | 기존 Layout 유지 | 변경 최소화 원칙 — redirect 타이밍 수정만으로 요건 충족 |
 
 ### 시작 화면
 
@@ -572,7 +572,7 @@ Phase 1~6에서 AI 파이프라인·멤버십·프론트엔드 기능 구현이 
 
 ### 작업 배경 및 목표
 
-과제 필수 요건 "퀄리티 있는 테스트 코드 반드시 작성"에 맞춰 누락된 2개 영역을 보완한다.  
+필수 요건 "퀄리티 있는 테스트 코드 반드시 작성"에 맞춰 누락된 2개 영역을 보완한다.  
 Codex 리뷰를 통해 (1) 만료 멤버십 request 레벨 검증 누락, (2) UpgradeService 서비스 spec 미작성이 확인됐다.  
 `base_time = [expires_at, Time.current].max` 분기 로직과 same-price 허용 동작을 테스트로 문서화한다.
 
@@ -660,7 +660,7 @@ Codex 리뷰를 통해 (1) 만료 멤버십 request 레벨 검증 누락, (2) Up
 
 ### 작업 배경 및 목표
 
-과제 요구사항과 실제 구현의 불일치를 해소하는 작업. 플랜 이름이 영문(free/basic/standard/premium)으로 돼 있고 standard 플랜이 존재했으나, 요구사항은 한글 3종(무료/베이직/프리미엄 플러스)만 명시. PlanSelector의 업그레이드/다운그레이드 분기도 제거하고 "구매" 단일 흐름으로 단순화. 3회 Codex 리뷰(계획 초안 → work-order → 판정 검증)로 계획을 보완 후 구현.
+요구사항과 실제 구현의 불일치를 해소하는 작업. 플랜 이름이 영문(free/basic/standard/premium)으로 돼 있고 standard 플랜이 존재했으나, 요구사항은 한글 3종(무료/베이직/프리미엄 플러스)만 명시. PlanSelector의 업그레이드/다운그레이드 분기도 제거하고 "구매" 단일 흐름으로 단순화. 3회 Codex 리뷰(계획 초안 → work-order → 판정 검증)로 계획을 보완 후 구현.
 
 ### 주요 프롬프트 예시
 
